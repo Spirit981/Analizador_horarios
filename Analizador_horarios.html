@@ -1,0 +1,2099 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horarios · Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #10141B;
+    --panel: #171D27;
+    --panel-2: #1D2430;
+    --line: #2A3240;
+    --text: #E7EAEE;
+    --text-dim: #8B94A3;
+    --text-faint: #5A6373;
+    --amber: #E8A33D;
+    --red: #E4573D;
+    --yellow: #E8C547;
+    --orange: #E8944A;
+    --green: #4CAF7D;
+    --gray-chip: #6B7686;
+    --blue: #5B8DEF;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-0.01em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .app{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:22px;flex-wrap:wrap;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:38px;height:38px;border-radius:9px;
+    background:linear-gradient(135deg,var(--red),var(--yellow) 33%,var(--orange) 66%,var(--green));
+    flex:none;
+  }
+  .brand h1{font-size:19px;color:var(--text);}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--text-dim);}
+  nav.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:10px;border:1px solid var(--line);}
+  nav.tabs button{
+    appearance:none;border:none;background:transparent;color:var(--text-dim);
+    padding:8px 14px;border-radius:7px;font-size:13.5px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:all .15s ease;
+  }
+  nav.tabs button.active{background:var(--panel-2);color:var(--text);}
+  nav.tabs button:hover:not(.active){color:var(--text);}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+  .panel h2{font-size:16px;margin-bottom:4px;}
+  .panel .sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px;}
+
+  .dropzone{
+    border:1.5px dashed var(--line);border-radius:var(--radius);
+    padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;
+    background:var(--panel-2);
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--amber);background:#20263056;}
+  .dropzone .icon{font-size:26px;margin-bottom:8px;}
+  .dropzone p{margin:2px 0;font-size:13.5px;color:var(--text-dim);}
+  .dropzone strong{color:var(--text);}
+  input[type=file]{display:none;}
+
+  .btn{
+    appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--text);
+    padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:.15s;
+  }
+  .btn:hover{border-color:var(--amber);}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:#231705;}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn.danger{color:var(--red);}
+  .btn.danger:hover{border-color:var(--red);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.sm{padding:6px 11px;font-size:12px;}
+
+  .log{margin-top:14px;display:flex;flex-direction:column;gap:6px;}
+  .log-row{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:8px 10px;border-radius:7px;background:var(--panel-2);}
+  .log-row .name{flex:1;color:var(--text);font-weight:500;}
+  .log-row .status{color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11.5px;}
+  .log-row.ok .status{color:var(--green);}
+  .log-row.err .status{color:var(--red);}
+  .spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--amber);animation:spin .7s linear infinite;flex:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .weekcard{border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-bottom:10px;background:var(--panel-2);}
+  .weekcard-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .weekcard-head .title{font-weight:600;font-size:14px;}
+  .weekcard-head .meta{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .weekcard-actions{display:flex;gap:8px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.8px;}
+  th{text-align:left;color:var(--text-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line);}
+  td{padding:7px 10px;border-bottom:1px solid #232B37;}
+  tr:last-child td{border-bottom:none;}
+  .cell-table{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px;}
+
+  select.cat{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:4px 6px;font-size:12px;font-family:'Inter',sans-serif;
+  }
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;}
+  .chip::before{content:'';width:7px;height:7px;border-radius:50%;}
+  .chip.red{color:var(--red);background:#E4573D22;} .chip.red::before{background:var(--red);}
+  .chip.yellow{color:var(--yellow);background:#E8C54722;} .chip.yellow::before{background:var(--yellow);}
+  .chip.orange{color:var(--orange);background:#E8944A22;} .chip.orange::before{background:var(--orange);}
+  .chip.green{color:var(--green);background:#4CAF7D22;} .chip.green::before{background:var(--green);}
+  .chip.gray{color:var(--gray-chip);background:#6B768622;} .chip.gray::before{background:var(--gray-chip);}
+  .chip.none{color:var(--text-faint);background:#5A637322;} .chip.none::before{background:var(--text-faint);}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px;}
+  .kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:14px 16px;}
+  .kpi .val{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;}
+  .kpi .lbl{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+  .kpi.red .val{color:var(--red);} .kpi.yellow .val{color:var(--yellow);}
+  .kpi.orange .val{color:var(--orange);} .kpi.green .val{color:var(--green);}
+
+  .chart-wrap{position:relative;height:280px;margin-top:10px;}
+  .chart-wrap.short{height:220px;}
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  @media(max-width:800px){.grid2{grid-template-columns:1fr;}}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--text-dim);}
+  .empty .icon{font-size:30px;margin-bottom:10px;}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .filters select,.filters input{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    border-radius:7px;padding:7px 10px;font-size:12.8px;font-family:'Inter',sans-serif;
+  }
+  .filters label{font-size:11.5px;color:var(--text-dim);margin-right:4px;}
+
+  .tag{font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  a{color:var(--amber);}
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-thumb{background:#2A3240;border-radius:5px;}
+  .hint{font-size:12px;color:var(--text-faint);margin-top:10px;line-height:1.5;}
+  .badge-count{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:11px;color:var(--text-dim);}
+
+  .chip.peach{color:#E8B98A;background:#E8B98A22;} .chip.peach::before{background:#E8B98A;}
+  .chip.navy{color:#7C93D6;background:#2A3B6E55;} .chip.navy::before{background:#4A5FA8;}
+  .chip.vacation{color:#B98AE8;background:#B98AE822;} .chip.vacation::before{background:#B98AE8;}
+  .chip.anomaly{color:#E4573D;background:#E4573D33;font-weight:700;} .chip.anomaly::before{background:#E4573D;}
+  .chip.holiday{color:#9AA3B0;background:#9AA3B033;} .chip.holiday::before{background:#9AA3B0;}
+  .chip.vacweek{color:#7CD6C4;background:#7CD6C433;} .chip.vacweek::before{background:#7CD6C4;}
+  .ee-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--red);border:1px solid var(--red);border-radius:10px;padding:0 6px;margin-left:5px;}
+
+  .balance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+  .balance-card{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:14px 16px;}
+  .balance-card .name{font-weight:600;font-size:13.5px;margin-bottom:8px;}
+  .balance-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);padding:3px 0;}
+  .balance-row b{color:var(--text);font-family:'JetBrains Mono',monospace;}
+  .balance-row.low b{color:var(--red);}
+  .balance-row.high b{color:var(--green);}
+
+  .rules-table td,.rules-table th{padding:6px 8px;}
+  .rules-table input{width:56px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:5px;padding:4px 6px;font-size:12px;text-align:center;}
+  .shortfall{color:var(--red);font-weight:700;}
+  .ok-cov{color:var(--green);}
+  .toggle-panel{cursor:pointer;user-select:none;}
+  .toggle-panel .arrow{display:inline-block;transition:transform .15s;margin-right:6px;}
+  .toggle-panel.closed .arrow{transform:rotate(-90deg);}
+  input.searchbox{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:7px 10px;font-size:12.8px;width:100%;max-width:260px;}
+</style>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <h1>Horarios</h1>
+        <p>Extracción y estadísticas de los cuadrantes semanales</p>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button data-tab="upload" class="active">Subir</button>
+      <button data-tab="review">Revisar datos</button>
+      <button data-tab="stats">Estadísticas</button>
+      <button data-tab="people">Personas</button>
+      <button data-tab="shifts">Turnos</button>
+      <button data-tab="irregular">Irregularidades</button>
+      <button data-tab="settings">Ajustes</button>
+    </nav>
+  </div>
+
+  <!-- UPLOAD TAB -->
+  <section id="tab-upload">
+    <div class="panel">
+      <h2>Subir cuadrantes (PDF)</h2>
+      <p class="sub">Todo el procesado ocurre en tu navegador — los PDF no se envían a ningún servidor. Puedes soltar varias semanas a la vez.</p>
+      <div class="dropzone" id="dropzone">
+        <div class="icon">📄</div>
+        <p><strong>Arrastra aquí los PDF</strong> o haz clic para elegir archivos</p>
+        <p>Se aceptan varios a la vez · formato "Semana Nº XX"</p>
+        <input type="file" id="fileInput" accept="application/pdf" multiple>
+      </div>
+      <div id="overallProgressWrap" style="display:none;margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);margin-bottom:5px">
+          <span id="overallProgressLabel">Procesando…</span><span id="overallProgressPct">0%</span>
+        </div>
+        <div style="background:var(--panel-2);border:1px solid var(--line);border-radius:20px;height:8px;overflow:hidden">
+          <div id="overallProgressBar" style="height:100%;width:0%;background:var(--amber);transition:width .2s"></div>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+      <p class="hint" id="uploadHint"></p>
+    </div>
+  </section>
+
+  <!-- REVIEW TAB -->
+  <section id="tab-review" style="display:none">
+    <div class="panel">
+      <h2>Semanas guardadas</h2>
+      <p class="sub">Revisa lo extraído de cada semana. Las celdas marcadas como <span class="chip anomaly" style="vertical-align:middle">anomalía</span> tienen un color que la app no reconoce — corrígelas aquí para que no distorsionen las estadísticas.</p>
+      <div id="weeksList"></div>
+    </div>
+  </section>
+
+  <!-- STATS TAB -->
+  <section id="tab-stats" style="display:none">
+    <div id="statsEmpty" class="panel empty" style="display:none">
+      <div class="icon">📊</div>
+      <p>Sube y guarda al menos una semana para ver estadísticas.</p>
+    </div>
+    <div id="statsContent" style="display:none">
+
+      <div class="panel">
+        <div class="filters">
+          <div><label>Desde</label><select id="fMonthFrom"></select></div>
+          <div><label>Hasta</label><select id="fMonthTo"></select></div>
+          <div><label>Persona</label><select id="fPerson"><option value="">Todas</option></select></div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h2>Ausencias por mes <button class="btn sm" id="absDrillBack" style="display:none;margin-left:8px">← Ver por meses</button></h2>
+          <p class="sub" id="absChartSub">Días de ausencia completa (rojo), por motivo — toca un mes para ver el desglose por semanas</p>
+          <div class="chart-wrap"><canvas id="chartAbsences"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2>Motivos de ausencia</h2>
+          <p class="sub">Reparto acumulado del periodo</p>
+          <div class="chart-wrap"><canvas id="chartReasons"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h2>Cobertura de plantilla</h2>
+          <p class="sub">% de jornadas cubiertas (trabajadas) frente al total programado, por mes</p>
+          <div class="chart-wrap"><canvas id="chartCoverage"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2>Uso de bolsa y horas extra</h2>
+          <p class="sub">Días-persona por mes</p>
+          <div class="chart-wrap"><canvas id="chartBolsaExtra"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Vacaciones por semana</h2>
+        <p class="sub">Personas de vacaciones (V) frente a vacaciones pendientes (VP), según el bloque "VACACIONES" de cada cuadrante. No incluye días donde la persona estaba de vacaciones pero constaba de baja médica (esos no cuentan como ninguna de las dos).</p>
+        <div class="chart-wrap"><canvas id="chartVacations"></canvas></div>
+      </div>
+
+      <div class="panel">
+        <h2>Ranking de ausencias por persona</h2>
+        <p class="sub">Días de ausencia completa en el periodo filtrado</p>
+        <div class="cell-table">
+          <table>
+            <thead><tr><th>Persona</th><th>Ausencias</th><th>BM</th><th>AP</th><th>Otros</th><th>Horas extra</th></tr></thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" id="anomalyPanel" style="display:none">
+        <h2>⚠️ Anomalías sin registrar</h2>
+        <p class="sub">Celdas con un color que no encaja en ninguna categoría conocida. Revísalas en la pestaña "Revisar datos".</p>
+        <div id="anomalyList"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PEOPLE TAB -->
+  <section id="tab-people" style="display:none">
+    <div id="peopleEmpty" class="panel empty" style="display:none">
+      <div class="icon">🧑‍💼</div>
+      <p>Sube y guarda al menos una semana para ver los saldos por persona.</p>
+    </div>
+    <div id="peopleContent" style="display:none">
+      <div class="panel">
+        <div class="filters">
+          <div><label>Año</label><select id="pYear"></select></div>
+          <div style="flex:1"><input type="text" id="pSearch" class="searchbox" placeholder="Buscar persona…"></div>
+        </div>
+        <p class="sub">
+          Asuntos propios (AP): 6 al año, se resta 1 por cada día marcado (AP). ·
+          Vacaciones intercambiables: 10 al año, se resta 1 por cada Vx (V1–V10) que aparezca con el nombre de la persona. ·
+          HHEE: cada día verde genera 16 h (8h×2); se descuentan las horas indicadas en códigos "HHEE" al disfrutarlas. ·
+          HHDD: cada entrada anticipada de domingo noche (contorno rojo o rayado) genera +2 h; se descuentan las horas indicadas en códigos "HHDD".
+        </p>
+        <div class="balance-grid" id="balanceGrid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Añadir HHEE manuales</h2>
+        <p class="sub">Para horas extra realizadas fuera de turno que no aparecen coloreadas en ningún cuadrante.</p>
+        <div class="filters">
+          <div><label>Persona</label><input type="text" id="mPerson" class="searchbox" placeholder="Nombre exacto de la persona" list="mPersonList"><datalist id="mPersonList"></datalist></div>
+          <div><label>Horas</label><input type="number" id="mHours" style="width:70px" min="0.5" step="0.5" value="8"></div>
+          <div><label>Fecha</label><input type="date" id="mDate"></div>
+          <div style="flex:1"><label>Nota (opcional)</label><input type="text" id="mNote" class="searchbox" placeholder="p. ej. cobertura urgencia"></div>
+          <button class="btn primary sm" id="mAddBtn">Añadir</button>
+        </div>
+        <div id="manualHHEEList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHIFTS TAB -->
+  <section id="tab-shifts" style="display:none">
+    <div id="shiftsEmpty" class="panel empty" style="display:none">
+      <div class="icon">🕐</div>
+      <p>Sube y guarda al menos una semana para ver la cobertura por turno.</p>
+    </div>
+    <div id="shiftsContent" style="display:none">
+
+      <div class="panel">
+        <h2 class="toggle-panel" id="rulesToggle"><span class="arrow">▾</span>Reglas mínimas de personal por turno</h2>
+        <p class="sub">Edita los mínimos si cambian. Se guardan automáticamente.</p>
+        <div id="rulesBody">
+          <div class="cell-table" style="max-height:none">
+            <table class="rules-table">
+              <thead><tr><th>Día</th><th>Mañana</th><th>Tarde</th><th>Noche</th></tr></thead>
+              <tbody id="rulesTableBody"></tbody>
+            </table>
+          </div>
+          <p class="hint">Deja una casilla vacía si no quieres aplicar un mínimo a esa combinación día/turno.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="filters">
+          <div><label>Desde</label><select id="sMonthFrom"></select></div>
+          <div><label>Hasta</label><select id="sMonthTo"></select></div>
+        </div>
+        <h2>Cobertura por día y turno</h2>
+        <p class="sub">Personas presentes (trabajando) frente al mínimo configurado. En rojo, los días que incumplen el mínimo.</p>
+        <div class="cell-table">
+          <table>
+            <thead><tr><th>Fecha</th><th>Semana</th><th>Día</th><th>Turno</th><th>Presentes</th><th>Mínimo</th><th>Estado</th></tr></thead>
+            <tbody id="coverageBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Uso de la bolsa/eventual según mínimos</h2>
+        <p class="sub">La norma: la bolsa solo debería venir cuando la plantilla fija (sin contar bolsa) no llega al mínimo pactado. Aquí se contrasta si eso se cumple.</p>
+        <div class="kpis" id="bolsaRuleKpis"></div>
+        <div class="cell-table" style="margin-top:14px">
+          <table>
+            <thead><tr><th>Fecha</th><th>Semana</th><th>Día</th><th>Turno</th><th>Plantilla fija</th><th>Bolsa</th><th>Mínimo</th><th>Situación</th></tr></thead>
+            <tbody id="bolsaRuleBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- IRREGULARITIES TAB -->
+  <section id="tab-irregular" style="display:none">
+    <div id="irregularEmpty" class="panel empty" style="display:none">
+      <div class="icon">🔍</div>
+      <p>Sube y guarda al menos una semana para ver este informe.</p>
+    </div>
+    <div id="irregularContent" style="display:none">
+      <div class="panel">
+        <h2>Ausencias sin justificar</h2>
+        <p class="sub">Detecta semanas en las que una persona aparece en menos días de los esperados, sin que el resto de días tengan ningún código de ausencia (BM, AP, vacaciones…) que lo explique — probablemente un olvido al confeccionar el cuadrante.</p>
+        <div class="filters">
+          <div><label>Desde</label><select id="iMonthFrom"></select></div>
+          <div><label>Hasta</label><select id="iMonthTo"></select></div>
+          <div><label>Días esperados/semana</label><input type="number" id="iExpected" value="5" min="1" max="7" style="width:56px"></div>
+        </div>
+        <div class="filters">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.8px;color:var(--text)">
+            <input type="checkbox" id="iHideBolsa" checked> Ocultar personal de la bolsa de trabajo
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.8px;color:var(--text)">
+            <input type="checkbox" id="iAggregateShifts" checked> Buscar en turnos diferentes (sumar días aunque cambien de turno)
+          </label>
+        </div>
+        <div class="cell-table">
+          <table>
+            <thead><tr><th>Persona</th><th>Semana</th><th>Días con entrada</th><th>Esperados</th><th>Detalle</th></tr></thead>
+            <tbody id="irregularBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section id="tab-settings" style="display:none">
+    <div class="panel">
+      <h2>Colores de las gráficas</h2>
+      <p class="sub">Personaliza el color de cada motivo de ausencia en los gráficos "Ausencias por mes" y "Motivos de ausencia".</p>
+      <div id="colorSettingsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+      <button class="btn sm" id="resetColorsBtn" style="margin-top:12px">Restaurar colores por defecto</button>
+    </div>
+
+    <div class="panel">
+      <h2>Personas con varios nombres</h2>
+      <p class="sub">
+        Algunos cuadrantes escriben el nombre de una misma persona de formas distintas (apodos, o con una hora/código pegado al final).
+        Los sufijos de hora o turno ("Borja Naveira 20-23", "Federico Huusmann 4N") se detectan y unifican automáticamente. Para apodos o
+        variantes que no sigan ese patrón, añade aquí una equivalencia — una por línea, formato <code>como aparece = nombre correcto</code>.
+      </p>
+      <textarea id="aliasesInput" rows="6" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:10px;font-family:'JetBrains Mono',monospace;font-size:12.5px" placeholder="Alex Lema = Alejandro Lema
+Asís = Asís Abelaziz"></textarea>
+      <div style="margin-top:10px"><button class="btn sm primary" id="saveAliasesBtn">Guardar equivalencias</button> <span class="hint" id="aliasesSavedHint" style="display:none;color:var(--green)">Guardado ✓</span></div>
+    </div>
+  </section>
+
+  <p class="hint" style="text-align:center;opacity:.6">Datos guardados localmente · nada se comparte con terceros</p>
+</div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Chart.js needs ResizeObserver for its responsive layout. Some restricted preview
+// sandboxes don't expose it — without this guard, the very first chart() call throws
+// and silently kills everything the stats/shifts tabs try to render after it.
+if (typeof window.ResizeObserver === 'undefined'){
+  window.ResizeObserver = class { observe(){} unobserve(){} disconnect(){} };
+}
+
+// Fallback: if the main Chart.js <script> tag failed to load for any reason (blocked
+// CDN, wrong pinned version, offline), try a second CDN before giving up on charts.
+let chartLoadPromise = Promise.resolve();
+if (typeof window.Chart === 'undefined'){
+  chartLoadPromise = new Promise((resolve)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = resolve;
+    s.onerror = resolve; // resolve anyway; drawChart() will report the failure clearly
+    document.head.appendChild(s);
+  });
+}
+
+/* ---------------------------------------------------------
+   CONSTANTS
+--------------------------------------------------------- */
+const MONTHS_ES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const MONTHS_LABEL = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DOW_LABEL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const SHIFT_LABEL = {manana:'Mañana', tarde:'Tarde', noche:'Noche', admin:'Admin'};
+const REASON_LABELS = {
+  'BM':'Baja médica','AP':'Asuntos propios','PAT':'Paternidad/Permiso','HF':'Hospitalización familiar',
+  'EDAD':'Reducción por edad','HHEE':'Horas extra (disfrute)','HHDD':'Horas de domingo (disfrute)','HP':'Horas de permiso',
+  'EXC':'Excedencia','PERMISO':'Permiso','REC':'Reclamación/otro','AUS':'Ausencia'
+};
+const DEFAULT_REASON_COLORS = {
+  'BM':'#E4573D','AP':'#E8A33D','PAT':'#5B8DEF','HF':'#9E7BD8','EDAD':'#4CAF7D','HHEE':'#E8C547',
+  'HHDD':'#8B94A3','HP':'#5FD6C0','EXC':'#D65F9A','PERMISO':'#7C93D6','REC':'#E8944A','AUS':'#B0B8C4'
+};
+// resolvedCategory meta: coverage=true means this cell counts as the person being present/working that shift
+const RESOLVED_META = {
+  worked:        {label:'Turno normal',            color:'#5A6373', coverage:true,  chipClass:'none'},
+  worked_change: {label:'Cambio de turno (T)',      color:'#6B7686', coverage:true,  chipClass:'gray'},
+  partial:       {label:'Jornada parcial',          color:'#E8C547', coverage:true,  chipClass:'yellow'},
+  bolsa:         {label:'Bolsa / refuerzo',         color:'#E8944A', coverage:true,  chipClass:'orange'},
+  extra:         {label:'Horas extra (verde)',      color:'#4CAF7D', coverage:true,  chipClass:'green'},
+  holiday:       {label:'Festivo (no laborable)',   color:'#9AA3B0', coverage:true,  chipClass:'holiday'},
+  absence:       {label:'Ausencia completa',        color:'#E4573D', coverage:false, chipClass:'red'},
+  vp:            {label:'Vacaciones pendientes',    color:'#E8B98A', coverage:false, chipClass:'peach'},
+  vacation_turn: {label:'Vacaciones (turno V)',     color:'#B98AE8', coverage:false, chipClass:'vacation'},
+  vacation_week: {label:'Vacaciones (V)',           color:'#7CD6C4', coverage:false, chipClass:'vacweek'},
+  vacation_bm:   {label:'Vacaciones + baja (no cuenta)', color:'#8B94A3', coverage:false, chipClass:'gray'},
+  offday4:       {label:'Descanso semana 4 días',   color:'#7C93D6', coverage:false, chipClass:'navy'},
+  rest:          {label:'Libre / descanso',         color:'#6B7686', coverage:false, chipClass:'gray'},
+  anomaly:       {label:'Anomalía sin registrar',   color:'#E4573D', coverage:null,  chipClass:'anomaly'}
+};
+
+// Bumped whenever a parsing fix changes how cells are classified — lets already
+// saved weeks be flagged as "parsed with an older version" so stale data (e.g.
+// from before the multi-row VACACIONES fix) doesn't silently linger unnoticed.
+const PARSER_VERSION = 5;
+
+const DEFAULT_RULES = [
+  {dow:0, shift:'noche', min:5},   // Domingo noche
+  {dow:5, shift:'noche', min:5},   // Viernes noche
+  {dow:6, shift:'manana', min:5},  // Sábado mañana
+  {dow:1, shift:'manana', min:7},  // Lunes mañana
+  {dow:2, shift:'manana', min:10}, // Martes mañana
+  {dow:3, shift:'manana', min:10}, // Miércoles mañana
+  {dow:4, shift:'manana', min:10}, // Jueves mañana
+  {dow:5, shift:'manana', min:10}, // Viernes mañana
+  {dow:1, shift:'tarde', min:8},
+  {dow:2, shift:'tarde', min:8},
+  {dow:3, shift:'tarde', min:8},
+  {dow:4, shift:'tarde', min:8},
+  {dow:5, shift:'tarde', min:8},
+  {dow:1, shift:'noche', min:9},
+  {dow:2, shift:'noche', min:9},
+  {dow:3, shift:'noche', min:9},
+  {dow:4, shift:'noche', min:9},
+];
+
+/* ---------------------------------------------------------
+   STORAGE — uses Claude's window.storage when running inside Claude.ai;
+   falls back to a local IndexedDB-backed implementation with the SAME
+   {get,set,delete,list} API when the file is opened standalone (double
+   click, GitHub Pages, your own server, etc). This makes the exact same
+   HTML file portable without any code changes.
+--------------------------------------------------------- */
+const storage = (function(){
+  if (window.storage) return window.storage;
+  const DB_NAME='horarios_local_db', STORE='kv';
+  let dbPromise = null;
+  function openDb(){
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = ()=>{ req.result.createObjectStore(STORE); };
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+    return dbPromise;
+  }
+  async function withStore(mode, fn){
+    const db = await openDb();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE, mode);
+      const store = tx.objectStore(STORE);
+      const result = fn(store);
+      tx.oncomplete = ()=>resolve(result.value);
+      tx.onerror = ()=>reject(tx.error);
+      if (result.req){
+        result.req.onsuccess = ()=>{ result.value = result.req.result; };
+      }
+    });
+  }
+  return {
+    async get(key){
+      const val = await withStore('readonly', store=>({req: store.get(key)}));
+      if (val===undefined) throw new Error('not found');
+      return {key, value: val};
+    },
+    async set(key, value){
+      await withStore('readwrite', store=>({req: store.put(value, key)}));
+      return {key, value};
+    },
+    async delete(key){
+      await withStore('readwrite', store=>({req: store.delete(key)}));
+      return {key, deleted:true};
+    },
+    async list(prefix){
+      const keys = await withStore('readonly', store=>({req: store.getAllKeys()}));
+      const filtered = (keys||[]).filter(k=>!prefix || String(k).startsWith(prefix));
+      return {keys: filtered};
+    }
+  };
+})();
+
+/* ---------------------------------------------------------
+   STORAGE HELPERS
+--------------------------------------------------------- */
+async function saveWeek(week){ await storage.set('week:'+week.id, JSON.stringify(week), false); }
+async function deleteWeek(id){ await storage.delete('week:'+id, false); }
+async function loadAllWeeks(){
+  const list = await storage.list('week:', false);
+  if (!list || !list.keys || !list.keys.length) return [];
+  const out = [];
+  for (const k of list.keys){
+    try{ const r = await storage.get(k, false); if (r && r.value) out.push(JSON.parse(r.value)); }catch(e){}
+  }
+  out.sort((a,b)=> (a.dates[0]||'').localeCompare(b.dates[0]||''));
+  return out;
+}
+async function loadRules(){
+  try{
+    const r = await storage.get('rules', false);
+    if (r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return DEFAULT_RULES.slice();
+}
+async function saveRules(rules){ await storage.set('rules', JSON.stringify(rules), false); }
+async function loadManualAdjustments(){
+  try{
+    const r = await storage.get('manual_adjustments', false);
+    if (r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return [];
+}
+async function saveManualAdjustments(list){ await storage.set('manual_adjustments', JSON.stringify(list), false); }
+
+async function loadReasonColors(){
+  try{
+    const r = await storage.get('reason_colors', false);
+    if (r && r.value) return {...DEFAULT_REASON_COLORS, ...JSON.parse(r.value)};
+  }catch(e){}
+  return {...DEFAULT_REASON_COLORS};
+}
+async function saveReasonColors(colors){ await storage.set('reason_colors', JSON.stringify(colors), false); }
+
+async function loadAliases(){
+  try{
+    const r = await storage.get('person_aliases', false);
+    if (r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return {};
+}
+async function saveAliases(map){ await storage.set('person_aliases', JSON.stringify(map), false); }
+
+// Normalizes a raw name as it appears in a cell into a canonical person name:
+// 1) strips a trailing time-range ("Borja Naveira 20-23" -> "Borja Naveira")
+// 2) strips a trailing shift-code token ("Federico Huusmann 4N" -> "Federico Huusmann")
+// 3) applies any user-defined alias (nicknames, partial names) on top of that
+let currentAliases = {};
+function stripNameSuffix(name){
+  let n = (name||'').trim();
+  n = n.replace(/\s+\d{1,2}\s*-\s*\d{1,2}$/,'');      // "...  20-23"
+  n = n.replace(/\s+\d{1,2}[A-Za-zÁÉÍÓÚÑáéíóúñ]{1,5}$/,''); // "...  4N" / "4NVI"
+  return n.trim();
+}
+function canonicalPersonName(name){
+  const stripped = stripNameSuffix(name);
+  const aliasKeys = Object.keys(currentAliases);
+  const norm = normalizeName(stripped);
+  for (const k of aliasKeys){
+    if (normalizeName(k)===norm) return currentAliases[k];
+  }
+  return stripped;
+}
+
+/* ---------------------------------------------------------
+   VECTOR RECT EXTRACTION (reads fill colors directly from the PDF's
+   drawing instructions instead of rasterizing — far more precise for
+   thin borders / hatch patterns than pixel sampling would be)
+--------------------------------------------------------- */
+function matMul(m1,m2){
+  const [a1,b1,c1,d1,e1,f1]=m1, [a2,b2,c2,d2,e2,f2]=m2;
+  return [a1*a2+b1*c2, a1*b2+b1*d2, c1*a2+d1*c2, c1*b2+d1*d2, e1*a2+f1*c2+e2, e1*b2+f1*d2+f2];
+}
+function matApply(m,x,y){ const [a,b,c,d,e,f]=m; return [a*x+c*y+e, b*x+d*y+f]; }
+
+async function extractFilledRects(page){
+  const OPS = pdfjsLib.OPS;
+  const rev = {}; for (const k in OPS) rev[OPS[k]]=k;
+  const oplist = await page.getOperatorList();
+  const viewport = page.getViewport({scale:1});
+  const pageHeight = viewport.height;
+  let ctm = [1,0,0,1,0,0];
+  const stack = [];
+  let fillColor = null;
+  const rects = [];
+  const MOVETO=OPS.moveTo, LINETO=OPS.lineTo, CLOSEPATH=OPS.closePath;
+  for (let i=0;i<oplist.fnArray.length;i++){
+    const name = rev[oplist.fnArray[i]];
+    const args = oplist.argsArray[i];
+    if (name==='save') stack.push(ctm);
+    else if (name==='restore') ctm = stack.pop() || ctm;
+    else if (name==='transform') ctm = matMul(ctm,args);
+    else if (name==='setFillRGBColor') fillColor = [args[0],args[1],args[2]];
+    else if (name==='setFillGray') fillColor = [args[0]*255,args[0]*255,args[0]*255];
+    else if (name==='setFillColorN') fillColor = (args[0]==='TilingPattern') ? 'PATTERN' : fillColor;
+    else if (name==='constructPath'){
+      const ops = args[0], pts = args[1];
+      let ptr=0, cur=[];
+      const subrects=[];
+      for (const op of ops){
+        if (op===MOVETO){ if (cur.length>=8) subrects.push(cur); cur=[pts[ptr],pts[ptr+1]]; ptr+=2; }
+        else if (op===LINETO){ cur.push(pts[ptr],pts[ptr+1]); ptr+=2; }
+        else if (op===CLOSEPATH){ /* no coords */ }
+      }
+      if (cur.length>=8) subrects.push(cur);
+      for (const poly of subrects){
+        const xs=[],ys=[];
+        for(let k=0;k<poly.length;k+=2){ const [X,Y]=matApply(ctm,poly[k],poly[k+1]); xs.push(X); ys.push(pageHeight-Y); }
+        rects.push({x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),color:fillColor});
+      }
+    }
+  }
+  return rects.filter(r=>(r.x1-r.x0)>3 && (r.y1-r.y0)>0.5);
+}
+
+// Returns one {top, color} sample per showText call — used to detect rows whose
+// leading text is rendered in red, which marks the start of a shift block (its
+// "RT", responsable de turno) in these schedules.
+async function extractTextColorSamples(page){
+  const OPS = pdfjsLib.OPS;
+  const rev = {}; for (const k in OPS) rev[OPS[k]]=k;
+  const oplist = await page.getOperatorList();
+  const viewport = page.getViewport({scale:1});
+  const pageHeight = viewport.height;
+  let ctm = [1,0,0,1,0,0];
+  let textMatrix = [1,0,0,1,0,0];
+  const stack = [];
+  let fillColor = [0,0,0];
+  const samples = [];
+  for (let i=0;i<oplist.fnArray.length;i++){
+    const name = rev[oplist.fnArray[i]];
+    const args = oplist.argsArray[i];
+    if (name==='save') stack.push({ctm, fillColor});
+    else if (name==='restore'){ const s = stack.pop(); if (s){ ctm=s.ctm; fillColor=s.fillColor; } }
+    else if (name==='transform') ctm = matMul(ctm,args);
+    else if (name==='setFillRGBColor') fillColor = [args[0],args[1],args[2]];
+    else if (name==='setFillGray') fillColor = [args[0]*255,args[0]*255,args[0]*255];
+    else if (name==='setTextMatrix') textMatrix = args;
+    else if (name==='beginText') textMatrix = [1,0,0,1,0,0];
+    else if (name==='showText' || name==='showSpacedText'){
+      const combined = matMul(textMatrix, ctm);
+      samples.push({ top: pageHeight - combined[5], color: fillColor.slice() });
+    }
+  }
+  return samples;
+}
+
+function classifyColor(rgb){
+  if (rgb==='PATTERN') return {hatch:true};
+  if (!Array.isArray(rgb)) return {cat:null};
+  const [r,g,b] = rgb;
+  if (r<40&&g<40&&b<40) return {cat:'ignore'}; // black: grid lines / text artifacts, not a cell fill
+  if (r>240&&g>240&&b>240) return {cat:'none'};
+  if (r>200&&g<40&&b<40) return {cat:'red'};
+  if (r>200&&g>200&&b<40) return {cat:'yellow'};
+  if (r>200&&g>150&&g<225&&b<40) return {cat:'orange'};
+  if (r<40&&g>140&&g<215&&b>50&&b<110) return {cat:'green'};
+  if (r>210&&b>100&&b<220&&g>150&&g<235) return {cat:'peach'};
+  if (r<70&&g<90&&b>50&&b<170) return {cat:'navy'};
+  if (Math.abs(r-g)<10&&Math.abs(g-b)<10&&r>195&&r<235) return {cat:'gray'};
+  // Darker achromatic gray, distinct from the lighter "gray" above — used for
+  // "Festivo no laborable" (public holiday). Threshold provisional until confirmed
+  // against a real sample PDF; adjust the range below if it misclassifies.
+  if (Math.abs(r-g)<10&&Math.abs(g-b)<10&&r>=75&&r<=195) return {cat:'darkgray'};
+  // Teal/blue-green — no defined meaning yet, treated as a normal worked shift
+  // per instruction, rather than being flagged as an unrecognized anomaly.
+  if (r<90&&g>100&&g<175&&b>120&&b<195) return {cat:'none'};
+  // header/legend swatch colors we intentionally ignore (not category data)
+  if (r<230&&g>245&&b>245) return {cat:'ignore'}; // light cyan legend swatch
+  if (r<230&&g>245&&b<230) return {cat:'ignore'}; // light green legend swatch
+  return {cat:'unknown'};
+}
+
+function parseCellText(text){
+  if (!text) return null;
+  text = text.replace(/\s+/g,' ').trim();
+  if (!text) return null;
+  if (/^VACACIONES$/i.test(text)) return null;
+  const codes = [...text.matchAll(/\(([^)]*)\)/g)].map(m=>m[1].trim()).filter(Boolean);
+  const name = text.replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+  return {name: name||null, code: codes.length ? codes.join(' / ') : null};
+}
+
+/* Resolve fill category + code into a final "resolvedCategory" used for stats */
+function resolveCategory(fillCat, code, isPool){
+  const c = (code||'').toUpperCase();
+  // The bottom "VACACIONES" block lists who is on vacation each specific day — a
+  // different meaning than the same colors have in a person's own weekly row.
+  if (isPool){
+    if (c.includes('BM')) return 'vacation_bm'; // on vacation but actually on sick leave that day: counts as neither
+    if (c.includes('VP')) return 'vp';
+    return 'vacation_week';
+  }
+  if (fillCat==='gray'){
+    if (/^T\d+/.test(c)) return 'worked_change';
+    if (/^V\d+/.test(c)) return 'vacation_turn';
+    return 'rest';
+  }
+  if (fillCat==='peach') return 'vp';
+  if (fillCat==='navy') return 'offday4';
+  if (fillCat==='darkgray') return 'holiday';
+  if (fillCat==='red') return 'absence';
+  if (fillCat==='yellow') return 'partial';
+  if (fillCat==='orange') return 'bolsa';
+  if (fillCat==='green') return 'extra';
+  if (fillCat==='unknown') return 'anomaly';
+  // none / no fill
+  return 'worked';
+}
+
+function extractReason(code){
+  if (!code) return null;
+  const c = code.toUpperCase();
+  for (const key of Object.keys(REASON_LABELS)){
+    if (c.includes(key)) return key;
+  }
+  return c.replace(/[^A-Z0-9]/g,'').slice(0,12) || 'OTRO';
+}
+function extractHours(code, fallback){
+  if (!code) return fallback;
+  const m = code.match(/(\d+)\s*H?H?(EE|DD)/i);
+  if (m) return parseInt(m[1],10);
+  return fallback;
+}
+
+/* ---------------------------------------------------------
+   PDF PARSING (main entry point)
+--------------------------------------------------------- */
+function clusterRows(items){
+  const sorted = [...items].sort((a,b)=>a.top-b.top);
+  const rows = [];
+  for (const it of sorted){
+    let row = rows.find(r => Math.abs(r.top - it.top) < 4.2);
+    if (!row){ row = {top: it.top, items: []}; rows.push(row); }
+    row.items.push(it);
+  }
+  rows.sort((a,b)=>a.top-b.top);
+  rows.forEach(r=>{ r.items.sort((a,b)=>a.x-b.x); r.text = r.items.map(i=>i.str).join(' '); });
+  return rows;
+}
+function colBoundaries(centers){
+  const b=[]; b.push(centers[0]-(centers[1]-centers[0])/2);
+  for(let i=0;i<centers.length-1;i++) b.push((centers[i]+centers[i+1])/2);
+  b.push(centers[centers.length-1]+(centers[centers.length-1]-centers[centers.length-2])/2);
+  return b;
+}
+function colIndexForX(x,b){ for(let i=0;i<b.length-1;i++) if (x>=b[i]&&x<b[i+1]) return i; return x<b[0]?0:b.length-2; }
+
+function buildWeekDatesFrom(dayNums, startMonthIdx, startYear){
+  const dates = [];
+  let m=startMonthIdx, y=startYear, prev=-1;
+  for (const d of dayNums){
+    if (prev!==-1 && d < prev){ m++; if(m>11){m=0;y++;} }
+    dates.push(new Date(Date.UTC(y,m,d)).toISOString().slice(0,10));
+    prev = d;
+  }
+  return dates;
+}
+function buildWeekDates(dayNums, monthIdx, year){
+  // Candidate A: the header's month applies to the first day as detected.
+  const candidateA = buildWeekDatesFrom(dayNums, monthIdx, year);
+  // Candidate B: the header only names the month covering most of the week (a
+  // common shorthand), and the first day actually belongs to the month before
+  // it — e.g. header says "JUNIO 2026" for a week that starts Sunday 31 de Mayo.
+  let mB = monthIdx-1, yB = year; if (mB<0){ mB=11; yB--; }
+  const candidateB = buildWeekDatesFrom(dayNums, mB, yB);
+  // The first column is always Domingo — use that known constraint to pick
+  // whichever candidate is actually consistent, rather than guessing.
+  const aIsSunday = new Date(candidateA[0]+'T12:00:00Z').getUTCDay()===0;
+  const bIsSunday = dayNums.length>1 && dayNums[0]>dayNums[1] && new Date(candidateB[0]+'T12:00:00Z').getUTCDay()===0;
+  if (!aIsSunday && bIsSunday) return candidateB;
+  return candidateA;
+}
+
+function normalizeName(s){
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+
+async function parsePdfFile(file, onProgress){
+  const report = (pct,label)=>{ if (onProgress) onProgress(pct,label); };
+  report(5,'Cargando PDF…');
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({data: buf}).promise;
+  const page = await doc.getPage(1);
+  const viewport = page.getViewport({scale:1});
+  const pageHeight = viewport.height;
+
+  report(25,'Leyendo texto…');
+  const textContent = await page.getTextContent();
+  const allItems = textContent.items
+    .filter(it=>it.str && it.str.trim().length>0)
+    .map(it=>{
+      const rot = Math.abs(it.transform[1])>0.01 || Math.abs(it.transform[2])>0.01;
+      // For rotated text, the glyph's vertical extent on the page runs from
+      // transform[5] to transform[5]+transform[1]*width — capturing that lets us
+      // know exactly which rows a section label like "NOCHE" spans, instead of
+      // treating the label as a single point and guessing at a boundary.
+      const topSpan0 = pageHeight - Math.max(it.transform[5], it.transform[5]+it.transform[1]*it.width);
+      const topSpan1 = pageHeight - Math.min(it.transform[5], it.transform[5]+it.transform[1]*it.width);
+      return { str: it.str.trim(), x: it.transform[4], top: pageHeight - it.transform[5], w: it.width||0, rot, topSpan0, topSpan1 };
+    });
+  const flatItems = allItems.filter(it=>!it.rot);
+  const rotItems = allItems.filter(it=>it.rot);
+
+  const rows = clusterRows(flatItems);
+
+  let weekNum=null, monthIdx=null, year=null;
+  let headerFound=false;
+  for (const r of rows){
+    const wm = r.text.match(/Semana\s*N[ºo°]?\s*(\d+)/i);
+    if (wm) weekNum = parseInt(wm[1],10);
+    if (!headerFound){
+      const ym = r.text.match(/(\d{4})/);
+      if (ym){
+        // For combined headers like "JUNIO/JULIO 2026" (a week spanning two months),
+        // take the FIRST (chronologically earliest) month named — that's the month of
+        // the week's first day. The date-rollover logic below advances the month
+        // automatically once the day numbers wrap around, so we must not start from
+        // the later month or every date in the week gets shifted forward incorrectly.
+        for (let mi=0; mi<MONTHS_ES.length; mi++){
+          if (r.text.toUpperCase().includes(MONTHS_ES[mi])){
+            monthIdx = mi; year = parseInt(ym[1],10); headerFound = true; break;
+          }
+        }
+      }
+    }
+  }
+  if (monthIdx===null || year===null){
+    throw new Error('No se pudo detectar el mes/año de esta semana en la cabecera del PDF — revisa que el archivo tenga el formato esperado ("MES AAAA" o "MES1/MES2 AAAA")');
+  }
+
+  let dayRowIdx = -1;
+  for (let i=0;i<rows.length;i++){
+    const numToks = rows[i].items.filter(t=>/^\d{1,2}$/.test(t.str));
+    if (numToks.length>=5 && numToks.length===rows[i].items.length){ dayRowIdx = i; break; }
+  }
+  if (dayRowIdx === -1) throw new Error('No se detectó la fila de días (formato inesperado)');
+
+  const dayRow = rows[dayRowIdx];
+  const centers = dayRow.items.map(t=>t.x+t.w/2);
+  const dayNums = dayRow.items.map(t=>parseInt(t.str,10));
+  const boundaries = colBoundaries(centers);
+  const nCols = centers.length;
+
+  const dates = buildWeekDates(dayNums, monthIdx, year);
+
+  // Sanity-check: does the "Domingo" column actually fall on a Sunday given the
+  // detected month/year? If not, the source PDF likely has a typo in its header
+  // (wrong year is the most common case) — flag it so the person can correct it
+  // in the Review tab rather than silently trusting a wrong date.
+  let dateWarning = null;
+  if (dates.length && new Date(dates[0]+'T12:00:00Z').getUTCDay()!==0){
+    dateWarning = `La cabecera del PDF dice "Domingo" para el día ${dayNums[0]}, pero con el mes/año detectado (${MONTHS_LABEL[monthIdx]} ${year}) ese día cae en ${DOW_LABEL[new Date(dates[0]+'T12:00:00Z').getUTCDay()]}. El PDF original probablemente tiene el año o el mes equivocado — corrígelo en "Revisar datos".`;
+  }
+
+  // The "VACACIONES" label marks the START of the vacation block, but that block
+  // can span more than one row (multiple people can be on vacation the same day).
+  // Find where real data actually ends by looking for the first abnormally large
+  // vertical gap after that label — that's the transition into the free-text notes
+  // section, which is a much bigger jump than the regular ~13pt row spacing.
+  let vacacionesRowIdx = -1;
+  for (let i=dayRowIdx+1;i<rows.length;i++){ if (/VACACIONES/i.test(rows[i].text)){ vacacionesRowIdx = i; break; } }
+  let dataEndIdx = rows.length-1;
+  if (vacacionesRowIdx!==-1){
+    dataEndIdx = vacacionesRowIdx;
+    for (let i=vacacionesRowIdx+1; i<rows.length; i++){
+      if (rows[i].top - rows[i-1].top > 20) break; // big gap = notes section starts here
+      dataEndIdx = i;
+    }
+  }
+  const poolRowIdx = vacacionesRowIdx; // kept for isPool checks below
+  const dataRows = rows.slice(dayRowIdx+1, dataEndIdx+1);
+  const notes = dataEndIdx < rows.length-1 ? rows.slice(dataEndIdx+1).map(r=>r.text).filter(t=>t && !/^(VACACIONES|MAÑANA|TARDE|NOCHE|ADMIN)$/i.test(t)) : [];
+
+  // --- shift sections from rotated vertical labels ---
+  // Read each label's actual text instead of assuming a fixed order/count of
+  // sections — some weeks are missing a section label (e.g. no "MAÑANA" that
+  // week), and assuming a fixed [manana,tarde,noche,admin] index mapping would
+  // silently shift every subsequent section's rows into the wrong shift.
+  const SHIFT_LABEL_MATCH = [
+    {re:/MA[ÑN]ANA/i, shift:'manana'},
+    {re:/TARDE/i, shift:'tarde'},
+    {re:/NOCHE/i, shift:'noche'},
+    {re:/ADMIN/i, shift:'admin'}
+  ];
+  const rotSorted = rotItems.slice().sort((a,b)=>a.top-b.top);
+  const clusters = [];
+  for (const it of rotSorted){
+    let c = clusters.find(c => it.top - c.maxTop < 15);
+    if (!c){ c = {minTop: it.top, maxTop: it.top, text: it.str}; clusters.push(c); }
+    else { c.maxTop = Math.max(c.maxTop, it.top); c.minTop = Math.min(c.minTop, it.top); c.text += ' '+it.str; }
+  }
+  clusters.sort((a,b)=>a.minTop-b.minTop);
+  clusters.forEach(c=>{
+    const match = SHIFT_LABEL_MATCH.find(m=>m.re.test(c.text));
+    c.shift = match ? match.shift : null;
+  });
+
+  // The rotated label's own position only approximates where one shift block
+  // ends and the next begins — the PDF draws no visual divider, so a row right
+  // at that midpoint can land in the wrong shift. Real signal confirmed by the
+  // person who owns this data: every shift (except Admin) always starts with
+  // one of a fixed set of "RT" (responsable de turno) people. Admin instead
+  // starts after an abnormally large vertical gap (a blank spacer row).
+  const RT_NAMES = ['Borja Naveira','David Ríos','Jesús Carballeira','Javier Recarey',
+    'Miguel Ortigosa','Miguel A. Vázquez','Alberto Vázquez','Hugo Cabarcos','Manuel Pombo'];
+  const RT_NAMES_NORM = RT_NAMES.map(normalizeName);
+  function isRTRow(row){
+    const norm = normalizeName(row.text);
+    return RT_NAMES_NORM.some(n=>norm.includes(n));
+  }
+  // Red text is a secondary signal (RTs are usually printed in red) kept as a
+  // fallback for the rare case a shift starts with someone outside that list.
+  const textColorSamples = await extractTextColorSamples(page);
+  const redSamples = textColorSamples.filter(s=>s.color[0]>200 && s.color[1]<70 && s.color[2]<70);
+  function isRedRow(rowTop){ return redSamples.some(s=>Math.abs(s.top-rowTop)<3.5); }
+
+  clusters.forEach((c,i)=>{
+    if (i===0) return; // first section's start is just the top of the data, no boundary to correct
+    const approxMid = (clusters[i-1].maxTop + c.minTop)/2;
+    const window = 60;
+    const candidateRows = dataRows.filter(r=>Math.abs(r.top-approxMid)<window);
+    if (c.shift==='admin'){
+      // find the largest gap between consecutive rows within the window
+      let bestGap=-1, bestIdx=-1;
+      for (let k=1;k<candidateRows.length;k++){
+        const gap = candidateRows[k].top - candidateRows[k-1].top;
+        if (gap>bestGap){ bestGap=gap; bestIdx=k; }
+      }
+      if (bestIdx!==-1 && bestGap>18) c.correctedLo = candidateRows[bestIdx].top - 1;
+    } else {
+      let candidates = candidateRows.filter(isRTRow);
+      if (!candidates.length) candidates = candidateRows.filter(r=>isRedRow(r.top));
+      if (candidates.length){
+        candidates.sort((a,b)=>Math.abs(a.top-approxMid)-Math.abs(b.top-approxMid));
+        c.correctedLo = candidates[0].top - 1;
+      }
+    }
+  });
+
+  const hasManana = clusters.some(c=>c.shift==='manana');
+  function shiftForTop(top){
+    if (!clusters.length) return null;
+    if (!hasManana && clusters[0].shift!=='manana' && top < clusters[0].minTop) return 'manana';
+    for (let i=0;i<clusters.length;i++){
+      const c = clusters[i];
+      const lo = i===0 ? -1e9 : (c.correctedLo!==undefined ? c.correctedLo : (clusters[i-1].maxTop + c.minTop)/2);
+      const nextLo = i===clusters.length-1 ? 1e9 : (clusters[i+1].correctedLo!==undefined ? clusters[i+1].correctedLo : (c.maxTop + clusters[i+1].minTop)/2);
+      if (top>=lo && top<nextLo) return c.shift;
+    }
+    return null;
+  }
+
+  // --- vector rects -> per (row,col) category + earlyEntry flag ---
+  report(55,'Extrayendo colores…');
+  const rawRects = await extractFilledRects(page);
+  const dataTop0 = dataRows.length ? dataRows[0].top - 8 : 0;
+  const dataTop1 = dataRows.length ? dataRows[dataRows.length-1].top + 8 : 1e9;
+  const dataRects = rawRects.filter(r=>r.y0>=dataTop0-2 && r.y1<=dataTop1+2);
+
+  const fillMap = new Map(); // "rowIdx:col" -> {cat, earlyEntry}
+  for (const rect of dataRects){
+    const info = classifyColor(rect.color);
+    const isHatch = !!info.hatch;
+    const isThinBorder = !isHatch && (rect.y1-rect.y0) < 4 && rect.color && rect.color[0]>200 && rect.color[1]<60;
+    const matchRows = [];
+    dataRows.forEach((r,idx)=>{ if (r.top >= rect.y0-2 && r.top <= rect.y1+2) matchRows.push(idx); });
+    const matchCols = [];
+    for (let c=0;c<nCols;c++){ const cx=(boundaries[c]+boundaries[c+1])/2; if (cx>=rect.x0-2 && cx<=rect.x1+2) matchCols.push(c); }
+    for (const ridx of matchRows){
+      for (const c of matchCols){
+        const key = ridx+':'+c;
+        let cell = fillMap.get(key);
+        if (!cell){ cell = {cat:null, earlyEntry:false}; fillMap.set(key,cell); }
+        if (isHatch || isThinBorder) cell.earlyEntry = true;
+        else if (info.cat && info.cat!=='ignore') cell.cat = info.cat;
+      }
+    }
+  }
+
+  const cells = [];
+  dataRows.forEach((row, ridx)=>{
+    const isPool = poolRowIdx!==-1 && (dayRowIdx+1+ridx)>=poolRowIdx;
+    const cols = Array.from({length:nCols}, ()=>[]);
+    for (const it of row.items){
+      const cx = it.x + it.w/2;
+      const idx = colIndexForX(cx, boundaries);
+      cols[idx].push(it);
+    }
+    const rowShift = isPool ? 'vacaciones' : shiftForTop(row.top);
+    cols.forEach((colItems, j)=>{
+      if (!colItems.length) return;
+      colItems.sort((a,b)=>a.x-b.x);
+      const text = colItems.map(i=>i.str).join(' ');
+      const parsed = parseCellText(text);
+      if (!parsed || !parsed.name) return;
+      const fillInfo = fillMap.get(ridx+':'+j) || {cat:null, earlyEntry:false};
+      const resolved = resolveCategory(fillInfo.cat, parsed.code, isPool);
+      const cellDate = dates[j] || null;
+      // Domingo only runs a night shift here — a Sunday entry can visually sit inside
+      // whichever section block (Mañana/Tarde/Noche) the row happens to fall under on
+      // the page, but it always represents the Domingo-noche crew, so force it.
+      const isDomingo = cellDate ? (new Date(cellDate+'T12:00:00Z').getUTCDay()===0) : false;
+      const shift = isPool ? 'vacaciones' : (isDomingo ? 'noche' : rowShift);
+      cells.push({
+        day: j,
+        date: cellDate,
+        person: parsed.name,
+        code: parsed.code,
+        fillColor: fillInfo.cat,
+        category: resolved,
+        earlyEntry: fillInfo.earlyEntry,
+        shift,
+        rowShift: isPool ? 'vacaciones' : rowShift, // kept so a later date correction can re-derive `shift` correctly
+        isPool
+      });
+    });
+  });
+
+  // "Festivo no laborable" (dark gray) marks a single calendar date shared by the
+  // whole team. In some source PDFs the fill rectangle for that column lands one
+  // column off for a block of rows (a layout quirk in the original document, not
+  // per-person data) — so instead of trusting each row's rect individually, take
+  // the date most commonly flagged as holiday that week and apply it uniformly.
+  {
+    const holidayDateCounts = {};
+    cells.forEach(c=>{ if (c.category==='holiday' && c.date) holidayDateCounts[c.date] = (holidayDateCounts[c.date]||0)+1; });
+    const holidayEntries = Object.entries(holidayDateCounts);
+    if (holidayEntries.length){
+      holidayEntries.sort((a,b)=>b[1]-a[1]);
+      const trueHolidayDate = holidayEntries[0][0];
+      cells.forEach(c=>{
+        if (c.category==='holiday' && c.date!==trueHolidayDate) c.category='worked';
+        else if (c.category==='worked' && c.date===trueHolidayDate) c.category='holiday';
+      });
+    }
+  }
+
+  report(90,'Clasificando celdas…');
+  const id = (year && weekNum) ? `${year}-S${String(weekNum).padStart(2,'0')}` : `${dates[0]||file.name}-${Math.random().toString(36).slice(2,7)}`;
+  report(100,'Listo');
+  return { id, fileName: file.name, weekNum, monthIdx, year, dates, dayNums, dateWarning, cells, notes, parserVersion: PARSER_VERSION };
+}
+
+/* ---------------------------------------------------------
+   UPLOAD TAB LOGIC
+--------------------------------------------------------- */
+const logEl = document.getElementById('log');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const uploadHint = document.getElementById('uploadHint');
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+['dragenter','dragover'].forEach(evt=>dropzone.addEventListener(evt, e=>{e.preventDefault(); dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(evt=>dropzone.addEventListener(evt, e=>{e.preventDefault(); dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop', e=>{
+  const files = [...e.dataTransfer.files].filter(f=>f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if (files.length) handleFiles(files);
+});
+fileInput.addEventListener('change', e=>{
+  if (e.target.files.length) handleFiles([...e.target.files]);
+  fileInput.value='';
+});
+
+async function handleFiles(files){
+  uploadHint.textContent='';
+  const newlyParsed = [];
+  const overallWrap = document.getElementById('overallProgressWrap');
+  const overallBar = document.getElementById('overallProgressBar');
+  const overallPct = document.getElementById('overallProgressPct');
+  const overallLabel = document.getElementById('overallProgressLabel');
+  overallWrap.style.display = files.length>1 ? 'block' : 'none';
+
+  for (let fi=0; fi<files.length; fi++){
+    const file = files[fi];
+    const row = document.createElement('div');
+    row.className='log-row';
+    row.innerHTML = `<div class="spin"></div><div class="name">${file.name}</div><div class="status" data-role="status">procesando…</div>
+      <div style="flex:0 0 90px;background:var(--panel);border-radius:10px;height:5px;overflow:hidden;margin-left:8px">
+        <div data-role="bar" style="height:100%;width:0%;background:var(--amber);transition:width .15s"></div>
+      </div>`;
+    logEl.prepend(row);
+    const statusEl = row.querySelector('[data-role=status]');
+    const barEl = row.querySelector('[data-role=bar]');
+    if (files.length>1){
+      overallLabel.textContent = `Procesando ${fi+1} de ${files.length}: ${file.name}`;
+      const basePct = Math.round(100*fi/files.length);
+      overallBar.style.width = basePct+'%';
+      overallPct.textContent = basePct+'%';
+    }
+    try{
+      const week = await parsePdfFile(file, (pct,label)=>{
+        barEl.style.width = pct+'%';
+        statusEl.textContent = label;
+        if (files.length>1){
+          const combined = Math.round(100*(fi + pct/100)/files.length);
+          overallBar.style.width = combined+'%';
+          overallPct.textContent = combined+'%';
+        }
+      });
+      const anomalies = week.cells.filter(c=>c.category==='anomaly').length;
+      reviewCache.set(week.id, week);
+      newlyParsed.push(week);
+      row.className='log-row ok';
+      row.innerHTML = `<div class="name">${file.name}</div><div class="status">Semana ${week.weekNum ?? '?'} · ${week.cells.length} celdas${anomalies?` · ⚠️ ${anomalies} anomalía(s)`:''}</div>`;
+    }catch(err){
+      console.error(err);
+      row.className='log-row err';
+      row.innerHTML = `<div class="name">${file.name}</div><div class="status">Error: ${err.message}</div>`;
+    }
+  }
+  if (files.length>1){ overallBar.style.width='100%'; overallPct.textContent='100%'; overallLabel.textContent='Terminado'; setTimeout(()=>overallWrap.style.display='none', 1200); }
+  if (newlyParsed.length){
+    uploadHint.innerHTML = `${newlyParsed.length} semana(s) procesada(s) — revísalas y guárdalas en <strong>Revisar datos</strong>.`;
+    renderReview();
+    switchTab('review');
+  }
+}
+
+/* ---------------------------------------------------------
+   REVIEW TAB
+--------------------------------------------------------- */
+const reviewCache = new Map();
+const savedIds = new Set();
+const weeksList = document.getElementById('weeksList');
+
+function catSelect(current, onChange){
+  const sel = document.createElement('select');
+  sel.className='cat';
+  Object.keys(RESOLVED_META).forEach(k=>{
+    if (k==='anomaly') return;
+    const opt = document.createElement('option');
+    opt.value=k; opt.textContent=RESOLVED_META[k].label;
+    if (k===current) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', ()=>onChange(sel.value));
+  return sel;
+}
+
+function applyDateCorrection(week, newYear, newMonthIdx){
+  week.year = newYear;
+  week.monthIdx = newMonthIdx;
+  week.dates = buildWeekDates(week.dayNums, newMonthIdx, newYear);
+  week.dateWarning = (new Date(week.dates[0]+'T12:00:00Z').getUTCDay()!==0)
+    ? `Con estos valores, el día ${week.dayNums[0]} sigue sin caer en domingo — revisa año/mes de nuevo.`
+    : null;
+  week.cells.forEach(c=>{
+    c.date = week.dates[c.day] || null;
+    if (!c.isPool){
+      const isDomingo = c.date ? (new Date(c.date+'T12:00:00Z').getUTCDay()===0) : false;
+      c.shift = isDomingo ? 'noche' : c.rowShift;
+    }
+  });
+  const newId = (week.year && week.weekNum) ? `${week.year}-S${String(week.weekNum).padStart(2,'0')}` : week.id;
+  const oldId = week.id;
+  week.id = newId;
+  return oldId;
+}
+
+function renderReview(){
+  weeksList.innerHTML='';
+  const weeks = [...reviewCache.values()].sort((a,b)=>(a.dates[0]||'').localeCompare(b.dates[0]||''));
+  if (!weeks.length){
+    weeksList.innerHTML = `<div class="empty"><div class="icon">🗂️</div><p>Todavía no hay semanas. Sube algún PDF en la pestaña "Subir".</p></div>`;
+    return;
+  }
+  weeks.forEach(week=>{
+    const card = document.createElement('div');
+    card.className='weekcard';
+    const range = week.dates.filter(Boolean);
+    const rangeLabel = range.length ? `${range[0]} → ${range[range.length-1]}` : '';
+    const saved = savedIds.has(week.id);
+    const anomalyCount = week.cells.filter(c=>c.category==='anomaly').length;
+    const badDate = (week.year && week.year<2000) || range.some(d=>d.startsWith('19'));
+    const stale = saved && (week.parserVersion||0) < PARSER_VERSION;
+    card.innerHTML = `
+      <div class="weekcard-head">
+        <div>
+          <div class="title">Semana ${week.weekNum ?? '?'} ${week.year ?? ''} <span class="badge-count">${week.cells.length} celdas</span> ${saved?'<span class="badge-count" style="color:var(--green);border-color:var(--green)">guardada</span>':''} ${anomalyCount?`<span class="badge-count" style="color:var(--red);border-color:var(--red)">⚠️ ${anomalyCount} anomalía(s)</span>`:''} ${badDate?`<span class="badge-count" style="color:var(--red);border-color:var(--red)">⚠️ fecha inválida — bórrala y vuelve a subir el PDF</span>`:''} ${stale?`<span class="badge-count" style="color:var(--amber);border-color:var(--amber)">⚠️ datos antiguos — vuelve a subir este PDF</span>`:''}</div>
+          <div class="meta">${rangeLabel} · ${week.fileName}</div>
+        </div>
+        <div class="weekcard-actions">
+          <button class="btn sm" data-act="toggle">Ver celdas</button>
+          <button class="btn sm" data-act="fixdate">Corregir año/mes</button>
+          <button class="btn sm primary" data-act="save">Guardar</button>
+          <button class="btn sm danger" data-act="remove">Quitar</button>
+        </div>
+      </div>
+      ${week.dateWarning ? `<p class="hint" style="color:var(--red);margin-top:10px">⚠️ ${week.dateWarning}</p>` : ''}
+      <div class="filters" style="display:none;margin-top:12px" data-role="fixform">
+        <div><label>Año</label><input type="number" data-role="fixYear" value="${week.year||''}" style="width:80px"></div>
+        <div><label>Mes inicial</label><select data-role="fixMonth">${MONTHS_LABEL.map((m,i)=>`<option value="${i}" ${i===week.monthIdx?'selected':''}>${m}</option>`).join('')}</select></div>
+        <button class="btn sm primary" data-act="applyfix">Aplicar</button>
+      </div>
+      <div class="cell-table" style="display:none;margin-top:12px" data-role="table"></div>
+    `;
+    const [toggleBtn, fixBtn, saveBtn, removeBtn] = card.querySelectorAll('.weekcard-actions button');
+    const tableWrap = card.querySelector('[data-role=table]');
+    const fixForm = card.querySelector('[data-role=fixform]');
+
+    fixBtn.addEventListener('click', ()=>{
+      fixForm.style.display = fixForm.style.display==='none' ? 'flex' : 'none';
+    });
+    card.querySelector('[data-act=applyfix]').addEventListener('click', async ()=>{
+      const newYear = parseInt(card.querySelector('[data-role=fixYear]').value, 10);
+      const newMonthIdx = parseInt(card.querySelector('[data-role=fixMonth]').value, 10);
+      if (!newYear){ alert('Indica un año válido.'); return; }
+      const oldId = applyDateCorrection(week, newYear, newMonthIdx);
+      if (oldId !== week.id){
+        reviewCache.delete(oldId);
+        reviewCache.set(week.id, week);
+        if (savedIds.has(oldId)){ await deleteWeek(oldId); savedIds.delete(oldId); }
+      }
+      renderReview();
+      refreshAllAvailability();
+    });
+
+    toggleBtn.addEventListener('click', ()=>{
+      const showing = tableWrap.style.display!=='none';
+      if (showing){ tableWrap.style.display='none'; toggleBtn.textContent='Ver celdas'; return; }
+      tableWrap.style.display='block';
+      toggleBtn.textContent='Ocultar';
+      buildCellTable(tableWrap, week); // rebuild each time in case of edits
+    });
+    saveBtn.addEventListener('click', async ()=>{
+      saveBtn.textContent='Guardando…'; saveBtn.disabled=true;
+      await saveWeek(week);
+      savedIds.add(week.id);
+      saveBtn.textContent='Guardado ✓';
+      setTimeout(()=>{saveBtn.textContent='Guardar'; saveBtn.disabled=false;}, 1200);
+      renderReview();
+      refreshAllAvailability();
+    });
+    removeBtn.addEventListener('click', async ()=>{
+      if (savedIds.has(week.id)){ await deleteWeek(week.id); savedIds.delete(week.id); }
+      reviewCache.delete(week.id);
+      renderReview();
+      refreshAllAvailability();
+    });
+
+    weeksList.appendChild(card);
+  });
+}
+
+function shiftSelect(current, isPool, onChange){
+  const sel = document.createElement('select');
+  sel.className='cat';
+  const options = isPool
+    ? [['vacaciones','Vacaciones']]
+    : [['manana','Mañana'],['tarde','Tarde'],['noche','Noche'],['admin','Admin']];
+  options.forEach(([val,label])=>{
+    const opt = document.createElement('option');
+    opt.value=val; opt.textContent=label;
+    if (val===current) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', ()=>onChange(sel.value));
+  return sel;
+}
+
+function buildCellTable(container, week){
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr><th>Fecha</th><th>Turno</th><th>Persona</th><th>Código</th><th>Estado</th><th>Entr. anticipada</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  week.cells.forEach((c)=>{
+    const tr = document.createElement('tr');
+    const tdDate = document.createElement('td'); tdDate.className='mono'; tdDate.textContent = c.date || '—';
+    const tdShift = document.createElement('td');
+    if (c.isPool){
+      tdShift.textContent = 'Vacaciones';
+    } else {
+      const shiftLbl = document.createElement('span'); shiftLbl.textContent = SHIFT_LABEL[c.shift] || '—';
+      const shiftSel = shiftSelect(c.shift, false, (val)=>{ c.shift = val; c.rowShift = val; shiftLbl.textContent = SHIFT_LABEL[val]||'—'; });
+      tdShift.appendChild(shiftLbl); tdShift.appendChild(shiftSel);
+    }
+    const tdPerson = document.createElement('td'); tdPerson.textContent = c.person;
+    const tdCode = document.createElement('td'); tdCode.className='mono'; tdCode.textContent = c.code || '';
+    const tdCat = document.createElement('td');
+    const meta = RESOLVED_META[c.category] || RESOLVED_META.worked;
+    const chip = document.createElement('span'); chip.className='chip '+meta.chipClass; chip.textContent=meta.label;
+    const sel = catSelect(c.category, (val)=>{ c.category = val; const m2=RESOLVED_META[val]; chip.className='chip '+m2.chipClass; chip.textContent=m2.label; });
+    tdCat.appendChild(chip); tdCat.appendChild(sel);
+    const tdEE = document.createElement('td');
+    const eeCheck = document.createElement('input'); eeCheck.type='checkbox'; eeCheck.checked = !!c.earlyEntry;
+    eeCheck.addEventListener('change', ()=>{ c.earlyEntry = eeCheck.checked; });
+    tdEE.appendChild(eeCheck);
+    tr.append(tdDate, tdShift, tdPerson, tdCode, tdCat, tdEE);
+    tbody.appendChild(tr);
+  });
+  container.innerHTML='';
+  container.appendChild(table);
+}
+
+/* ---------------------------------------------------------
+   TABS
+--------------------------------------------------------- */
+function switchTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.getElementById('tab-upload').style.display = name==='upload' ? '' : 'none';
+  document.getElementById('tab-review').style.display = name==='review' ? '' : 'none';
+  document.getElementById('tab-stats').style.display = name==='stats' ? '' : 'none';
+  document.getElementById('tab-people').style.display = name==='people' ? '' : 'none';
+  document.getElementById('tab-shifts').style.display = name==='shifts' ? '' : 'none';
+  document.getElementById('tab-irregular').style.display = name==='irregular' ? '' : 'none';
+  document.getElementById('tab-settings').style.display = name==='settings' ? '' : 'none';
+  if (name==='stats') renderStats();
+  if (name==='people') renderPeople();
+  if (name==='shifts') renderShifts();
+  if (name==='irregular') renderIrregular();
+  if (name==='settings') renderSettings();
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click', ()=>switchTab(b.dataset.tab)));
+
+async function renderSettings(){
+  const colors = await loadReasonColors();
+  const grid = document.getElementById('colorSettingsGrid');
+  grid.innerHTML = Object.keys(REASON_LABELS).map(key=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+      <input type="color" data-reason="${key}" value="${colors[key]||DEFAULT_REASON_COLORS[key]}" style="width:32px;height:32px;border:none;background:none;padding:0;cursor:pointer">
+      <span style="font-size:12.8px">${REASON_LABELS[key]}</span>
+    </div>
+  `).join('');
+  grid.querySelectorAll('input[type=color]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const c = await loadReasonColors();
+      c[inp.dataset.reason] = inp.value;
+      await saveReasonColors(c);
+    });
+  });
+  document.getElementById('resetColorsBtn').onclick = async ()=>{
+    await saveReasonColors({...DEFAULT_REASON_COLORS});
+    renderSettings();
+  };
+
+  const aliases = await loadAliases();
+  document.getElementById('aliasesInput').value = Object.entries(aliases).map(([k,v])=>`${k} = ${v}`).join('\n');
+  document.getElementById('saveAliasesBtn').onclick = async ()=>{
+    const lines = document.getElementById('aliasesInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const map = {};
+    lines.forEach(line=>{
+      const parts = line.split('=');
+      if (parts.length===2){
+        const alias = parts[0].trim(), canonical = parts[1].trim();
+        if (alias && canonical) map[alias] = canonical;
+      }
+    });
+    await saveAliases(map);
+    currentAliases = map;
+    const hint = document.getElementById('aliasesSavedHint');
+    hint.style.display = 'inline';
+    setTimeout(()=>hint.style.display='none', 1500);
+  };
+}
+
+function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : null; }
+function formatDMY(dateStr){
+  if (!dateStr) return '—';
+  const [y,m,d] = dateStr.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+function refreshAllAvailability(){
+  const has = savedIds.size>0;
+  document.getElementById('statsEmpty').style.display = has? 'none':'block';
+  document.getElementById('statsContent').style.display = has? 'block':'none';
+  document.getElementById('peopleEmpty').style.display = has? 'none':'block';
+  document.getElementById('peopleContent').style.display = has? 'block':'none';
+  document.getElementById('shiftsEmpty').style.display = has? 'none':'block';
+  document.getElementById('shiftsContent').style.display = has? 'block':'none';
+  document.getElementById('irregularEmpty').style.display = has? 'none':'block';
+  document.getElementById('irregularContent').style.display = has? 'block':'none';
+}
+
+/* ---------------------------------------------------------
+   STATS TAB
+--------------------------------------------------------- */
+let charts = {};
+let absDrillMonth = null;
+document.getElementById('absDrillBack').addEventListener('click', ()=>{ absDrillMonth = null; renderStats(); });
+
+function buildMonthFilterOptions(allWeeks, fromEl, toEl, builtFlagAttr){
+  const months = new Set();
+  allWeeks.forEach(w=>w.cells.forEach(c=>{ if (c.date) months.add(monthKey(c.date)); }));
+  const sortedMonths = [...months].sort();
+  const monthLabel = k=>{ const [y,m]=k.split('-'); return `${MONTHS_LABEL[parseInt(m,10)-1]} ${y}`; };
+  if (fromEl.dataset[builtFlagAttr]!=='1'){
+    sortedMonths.forEach(k=>{ fromEl.appendChild(new Option(monthLabel(k), k)); toEl.appendChild(new Option(monthLabel(k), k)); });
+    fromEl.value = sortedMonths[0]; toEl.value = sortedMonths[sortedMonths.length-1];
+    fromEl.dataset[builtFlagAttr]='1'; toEl.dataset[builtFlagAttr]='1';
+  }
+  return sortedMonths;
+}
+
+function buildPersonFilterOptions(allWeeks, selectEl){
+  if (selectEl.dataset.built==='1') return;
+  const people = new Set();
+  allWeeks.forEach(w=>w.cells.forEach(c=>{ if (c.person) people.add(c.person); }));
+  [...people].sort().forEach(p=>selectEl.appendChild(new Option(p,p)));
+  selectEl.dataset.built='1';
+}
+
+async function renderStats(){
+  await chartLoadPromise;
+  currentAliases = await loadAliases();
+  const allWeeks = await loadAllWeeks();
+  refreshAllAvailability();
+  if (!allWeeks.length) return;
+
+  const fFrom = document.getElementById('fMonthFrom'), fTo = document.getElementById('fMonthTo'), fPerson = document.getElementById('fPerson');
+  buildMonthFilterOptions(allWeeks, fFrom, fTo, 'built');
+  buildPersonFilterOptions(allWeeks, fPerson);
+  if (fFrom.dataset.listenerAdded!=='1'){
+    [fFrom,fTo,fPerson].forEach(el=>el.addEventListener('change', renderStats));
+    fFrom.dataset.listenerAdded='1';
+  }
+
+  const from = fFrom.value, to = fTo.value, personFilter = fPerson.value;
+
+  let cells = [];
+  allWeeks.forEach(w=>w.cells.forEach(c=>{
+    if (!c.date) return;
+    const mk = monthKey(c.date);
+    if (from && mk<from) return;
+    if (to && mk>to) return;
+    if (personFilter && c.person!==personFilter) return;
+    c._weekNum = w.weekNum; // used for the anomaly list below (dd-mm-aaaa + week)
+    cells.push(c);
+  }));
+
+  const countBy = cat => cells.filter(c=>c.category===cat).length;
+  const totalSlots = cells.filter(c=>c.category!=='anomaly').length;
+  const workedCats = ['worked','worked_change','partial','bolsa','extra','holiday'];
+  const worked = cells.filter(c=>workedCats.includes(c.category)).length;
+  const coverage = totalSlots ? Math.round(100*worked/totalSlots) : 0;
+  const kpis = document.getElementById('kpis');
+  kpis.innerHTML = `
+    <div class="kpi red"><div class="val">${countBy('absence')}</div><div class="lbl">Días de ausencia completa</div></div>
+    <div class="kpi yellow"><div class="val">${countBy('partial')}</div><div class="lbl">Jornadas parciales</div></div>
+    <div class="kpi orange"><div class="val">${countBy('bolsa')}</div><div class="lbl">Días cubiertos por bolsa</div></div>
+    <div class="kpi green"><div class="val">${countBy('extra')}</div><div class="lbl">Jornadas de horas extra</div></div>
+    <div class="kpi"><div class="val">${coverage}%</div><div class="lbl">Cobertura de plantilla</div></div>
+  `;
+
+  const monthsSorted = [...new Set(cells.map(c=>monthKey(c.date)))].sort();
+  try{
+  const reasonSet = new Set();
+  cells.filter(c=>c.category==='absence').forEach(c=>reasonSet.add(extractReason(c.code)||'AUS'));
+  const reasons = [...reasonSet];
+  const reasonColorMap = await loadReasonColors();
+  const fallbackColors = ['#E4573D','#E8A33D','#5B8DEF','#9E7BD8','#4CAF7D','#E8C547','#8B94A3','#E8944A'];
+  const colorFor = (r,i) => reasonColorMap[r] || fallbackColors[i%fallbackColors.length];
+
+  const backBtn = document.getElementById('absDrillBack');
+  const subEl = document.getElementById('absChartSub');
+  if (absDrillMonth && !monthsSorted.includes(absDrillMonth)) absDrillMonth = null; // filters changed, drop stale drill
+  if (!absDrillMonth){
+    const dsAbsences = reasons.map((r,i)=>({
+      label: REASON_LABELS[r] || r,
+      backgroundColor: colorFor(r,i),
+      data: monthsSorted.map(mk=> cells.filter(c=>c.category==='absence' && monthKey(c.date)===mk && (extractReason(c.code)||'AUS')===r).length)
+    }));
+    drawChart('chartAbsences','bar', {
+      labels: monthsSorted.map(k=>{const [y,m]=k.split('-');return MONTHS_LABEL[parseInt(m,10)-1]+' '+y.slice(2);}),
+      datasets: dsAbsences
+    }, { stacked:true, onBarClick: (idx)=>{ absDrillMonth = monthsSorted[idx]; renderStats(); } });
+    backBtn.style.display='none';
+    subEl.textContent = 'Días de ausencia completa (rojo), por motivo — toca un mes para ver el desglose por semanas';
+  } else {
+    const weeksInMonth = allWeeks.filter(w=>w.dates.some(d=>d && monthKey(d)===absDrillMonth)).sort((a,b)=>(a.weekNum||0)-(b.weekNum||0));
+    const dsAbsences = reasons.map((r,i)=>({
+      label: REASON_LABELS[r] || r,
+      backgroundColor: colorFor(r,i),
+      data: weeksInMonth.map(w=> w.cells.filter(c=>c.category==='absence' && monthKey(c.date)===absDrillMonth && (!personFilter||c.person===personFilter) && (extractReason(c.code)||'AUS')===r).length)
+    }));
+    drawChart('chartAbsences','bar', {
+      labels: weeksInMonth.map(w=>`S${w.weekNum??'?'}`),
+      datasets: dsAbsences
+    }, { stacked:true });
+    backBtn.style.display='inline-block';
+    const [dy,dm] = absDrillMonth.split('-');
+    subEl.textContent = `${MONTHS_LABEL[parseInt(dm,10)-1]} ${dy} por semanas`;
+  }
+
+  const reasonCounts = reasons.map(r=>cells.filter(c=>c.category==='absence' && (extractReason(c.code)||'AUS')===r).length);
+  drawChart('chartReasons','doughnut', {
+    labels: reasons.map(r=>REASON_LABELS[r]||r),
+    datasets: [{ data: reasonCounts, backgroundColor: reasons.map((r,i)=>colorFor(r,i)) }]
+  }, {});
+
+  const coverageByMonth = monthsSorted.map(mk=>{
+    const mCells = cells.filter(c=>monthKey(c.date)===mk && c.category!=='anomaly');
+    const w = mCells.filter(c=>workedCats.includes(c.category)).length;
+    return mCells.length ? Math.round(100*w/mCells.length) : 0;
+  });
+  drawChart('chartCoverage','line', {
+    labels: monthsSorted.map(k=>{const [y,m]=k.split('-');return MONTHS_LABEL[parseInt(m,10)-1]+' '+y.slice(2);}),
+    datasets: [{ label:'Cobertura %', data: coverageByMonth, borderColor:'#E8A33D', backgroundColor:'#E8A33D33', fill:true, tension:.3 }]
+  }, { suggestedMin:0, suggestedMax:100 });
+
+  drawChart('chartBolsaExtra','bar', {
+    labels: monthsSorted.map(k=>{const [y,m]=k.split('-');return MONTHS_LABEL[parseInt(m,10)-1]+' '+y.slice(2);}),
+    datasets: [
+      { label:'Bolsa', backgroundColor:'#E8944A', data: monthsSorted.map(mk=>cells.filter(c=>c.category==='bolsa'&&monthKey(c.date)===mk).length) },
+      { label:'Horas extra', backgroundColor:'#4CAF7D', data: monthsSorted.map(mk=>cells.filter(c=>c.category==='extra'&&monthKey(c.date)===mk).length) }
+    ]
+  }, {});
+
+  // Vacations are tracked per week (from the "VACACIONES" block), not per month —
+  // filtered by the same month range and, if set, the same person.
+  const weeksInRange = allWeeks.filter(w=>{
+    const wMonths = w.dates.filter(Boolean).map(monthKey);
+    return wMonths.some(mk => (!from || mk>=from) && (!to || mk<=to));
+  }).sort((a,b)=> ((a.year||0)*100+(a.weekNum||0)) - ((b.year||0)*100+(b.weekNum||0)) );
+  drawChart('chartVacations','bar', {
+    labels: weeksInRange.map(w=>`S${w.weekNum??'?'} '${String(w.year??'').slice(-2)}`),
+    datasets: [
+      { label:'V (vacaciones)', backgroundColor:'#7CD6C4', data: weeksInRange.map(w=>w.cells.filter(c=>c.category==='vacation_week' && (!personFilter||c.person===personFilter)).length) },
+      { label:'VP (pendientes)', backgroundColor:'#E8B98A', data: weeksInRange.map(w=>w.cells.filter(c=>c.category==='vp' && c.isPool && (!personFilter||c.person===personFilter)).length) }
+    ]
+  }, { stacked:false });
+
+  const people = [...new Set(cells.map(c=>canonicalPersonName(c.person)))];
+  const rows = people.map(p=>{
+    const pc = cells.filter(c=>canonicalPersonName(c.person)===p);
+    const abs = pc.filter(c=>c.category==='absence');
+    return {
+      person:p, total: abs.length,
+      bm: abs.filter(c=>extractReason(c.code)==='BM').length,
+      ap: abs.filter(c=>extractReason(c.code)==='AP').length,
+      otros: abs.filter(c=>!['BM','AP'].includes(extractReason(c.code))).length,
+      extra: pc.filter(c=>c.category==='extra').length
+    };
+  }).filter(r=>r.total>0 || r.extra>0).sort((a,b)=>b.total-a.total);
+  document.getElementById('rankingBody').innerHTML = rows.map(r=>`<tr><td>${r.person}</td><td>${r.total}</td><td>${r.bm}</td><td>${r.ap}</td><td>${r.otros}</td><td>${r.extra}</td></tr>`).join('') || `<tr><td colspan="6" style="color:var(--text-dim)">Sin datos en el rango seleccionado</td></tr>`;
+
+  // anomalies
+  const anomalies = cells.filter(c=>c.category==='anomaly');
+  const anomalyPanel = document.getElementById('anomalyPanel');
+  if (anomalies.length){
+    anomalyPanel.style.display='block';
+    document.getElementById('anomalyList').innerHTML = anomalies.map(a=>
+      `<div class="log-row err"><div class="name">${a.person} — ${formatDMY(a.date)} (S${a._weekNum ?? '?'})</div><div class="status">color:${a.fillColor||'?'} código:${a.code||'—'}</div></div>`
+    ).join('');
+  } else {
+    anomalyPanel.style.display='none';
+  }
+  } catch(err){
+    console.error('Error al calcular estadísticas:', err);
+  }
+}
+
+function drawChart(canvasId, type, data, scaleOpts){
+  try{
+    if (typeof Chart === 'undefined'){
+      throw new Error('La librería Chart.js no se ha cargado (revisa la conexión o si el CDN está bloqueado)');
+    }
+    const canvasEl = document.getElementById(canvasId);
+    if (!canvasEl) return;
+    const ctx = canvasEl.getContext('2d');
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const isStackable = type==='bar';
+    charts[canvasId] = new Chart(ctx, {
+      type, data,
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'#8B94A3', font:{size:11} } } },
+        scales: type==='doughnut' ? {} : {
+          x:{ stacked: isStackable && scaleOpts.stacked, ticks:{color:'#8B94A3',font:{size:11}}, grid:{color:'#232B37'} },
+          y:{ stacked: isStackable && scaleOpts.stacked, beginAtZero:true, suggestedMax: scaleOpts.suggestedMax, ticks:{color:'#8B94A3',font:{size:11}}, grid:{color:'#232B37'} }
+        },
+        onClick: scaleOpts.onBarClick ? (evt, elements) => {
+          if (elements && elements.length) scaleOpts.onBarClick(elements[0].index);
+        } : undefined,
+        onHover: scaleOpts.onBarClick ? (evt, elements) => {
+          evt.native.target.style.cursor = elements && elements.length ? 'pointer' : 'default';
+        } : undefined
+      }
+    });
+  }catch(err){
+    console.error('No se pudo dibujar el gráfico '+canvasId+':', err);
+    const canvasEl = document.getElementById(canvasId);
+    if (canvasEl && canvasEl.parentElement){
+      canvasEl.parentElement.innerHTML = '<p class="hint" style="color:var(--red)">No se pudo dibujar este gráfico: '+(err && err.message ? err.message : 'error desconocido')+'</p>';
+    }
+  }
+}
+
+/* ---------------------------------------------------------
+   PEOPLE TAB — AP / HHEE / HHDD balances
+--------------------------------------------------------- */
+async function renderPeople(){
+  currentAliases = await loadAliases();
+  const allWeeks = await loadAllWeeks();
+  refreshAllAvailability();
+  if (!allWeeks.length) return;
+  const manualAdjustments = await loadManualAdjustments();
+
+  const years = new Set();
+  allWeeks.forEach(w=>w.cells.forEach(c=>{ if (c.date) years.add(c.date.slice(0,4)); }));
+  const yearSel = document.getElementById('pYear');
+  if (yearSel.dataset.built!=='1'){
+    [...years].sort().forEach(y=>yearSel.appendChild(new Option(y,y)));
+    yearSel.value = [...years].sort().slice(-1)[0] || '';
+    yearSel.dataset.built='1';
+    yearSel.addEventListener('change', renderPeople);
+    document.getElementById('pSearch').addEventListener('input', renderPeople);
+  }
+  const year = yearSel.value;
+  const search = (document.getElementById('pSearch').value||'').toLowerCase().trim();
+
+  let cells = [];
+  allWeeks.forEach(w=>w.cells.forEach(c=>{ if (c.date && (!year || c.date.slice(0,4)===year)) cells.push(c); }));
+
+  const people = new Set(cells.map(c=>canonicalPersonName(c.person)));
+  manualAdjustments.forEach(m=>{ if (!year || (m.date||'').slice(0,4)===year || !m.date) people.add(canonicalPersonName(m.person)); });
+  const peopleList = [...people].sort();
+  const grid = document.getElementById('balanceGrid');
+  grid.innerHTML='';
+  peopleList.filter(p=>!search || p.toLowerCase().includes(search)).forEach(p=>{
+    const pc = cells.filter(c=>canonicalPersonName(c.person)===p);
+    const apUsed = pc.filter(c=> (c.code||'').toUpperCase().includes('AP')).length;
+    const apBalance = 6 - apUsed;
+
+    const isVxCode = code => (code||'').toUpperCase().split('/').map(s=>s.trim()).some(s=>/^V\d{1,2}$/.test(s));
+    const vacationDaysUsed = pc.filter(c=>isVxCode(c.code)).length;
+    const vacationBalance = 10 - vacationDaysUsed;
+
+    const greenDays = pc.filter(c=>c.category==='extra').length;
+    const manualHHEE = manualAdjustments.filter(m=>canonicalPersonName(m.person)===p && m.type==='HHEE' && (!year || (m.date||'').slice(0,4)===year || !m.date));
+    const manualHHEEHours = manualHHEE.reduce((s,m)=>s+m.hours,0);
+    const hheeGenerated = greenDays * 16 + manualHHEEHours;
+    const hheeUsed = pc.filter(c=>(c.code||'').toUpperCase().includes('HHEE'))
+      .reduce((sum,c)=> sum + extractHours(c.code, c.category==='absence'?8:4), 0);
+    const hheeBalance = hheeGenerated - hheeUsed;
+
+    const earlyEntries = pc.filter(c=>c.earlyEntry).length;
+    const hhddGenerated = earlyEntries * 2;
+    const hhddUsed = pc.filter(c=>(c.code||'').toUpperCase().includes('HHDD'))
+      .reduce((sum,c)=> sum + extractHours(c.code, c.category==='absence'?8:4), 0);
+    const hhddBalance = hhddGenerated - hhddUsed;
+
+    const card = document.createElement('div');
+    card.className='balance-card';
+    card.innerHTML = `
+      <div class="name">${p}</div>
+      <div class="balance-row ${apBalance<=1?'low':''}"><span>AP disponibles</span><b>${apBalance} / 6</b></div>
+      <div class="balance-row ${vacationBalance<=1?'low':''}"><span>Vacaciones intercambiables</span><b>${vacationBalance} / 10</b></div>
+      <div class="balance-row"><span>HHEE generadas / usadas</span><b>${hheeGenerated} / ${hheeUsed} h</b></div>
+      <div class="balance-row ${hheeBalance<0?'low':(hheeBalance>0?'high':'')}"><span>Saldo HHEE${manualHHEEHours?` <span class="tag">(${manualHHEEHours}h manuales)</span>`:''}</span><b>${hheeBalance} h</b></div>
+      <div class="balance-row"><span>HHDD generadas / usadas</span><b>${hhddGenerated} / ${hhddUsed} h</b></div>
+      <div class="balance-row ${hhddBalance<0?'low':(hhddBalance>0?'high':'')}"><span>Saldo HHDD</span><b>${hhddBalance} h</b></div>
+    `;
+    grid.appendChild(card);
+  });
+  if (!grid.children.length) grid.innerHTML = `<div class="empty"><p>Sin personas que coincidan con la búsqueda.</p></div>`;
+
+  // datalist of known people, for autocomplete on the manual-HHEE form
+  const datalist = document.getElementById('mPersonList');
+  if (datalist.dataset.built!=='1' || datalist.children.length!==peopleList.length){
+    datalist.innerHTML = peopleList.map(p=>`<option value="${p}">`).join('');
+    datalist.dataset.built='1';
+  }
+
+  renderManualHHEEList(manualAdjustments, year);
+}
+
+function renderManualHHEEList(manualAdjustments, year){
+  const list = manualAdjustments
+    .filter(m=>!year || (m.date||'').slice(0,4)===year || !m.date)
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const container = document.getElementById('manualHHEEList');
+  if (!list.length){
+    container.innerHTML = `<p class="hint">Sin horas extra manuales añadidas${year?` en ${year}`:''}.</p>`;
+    return;
+  }
+  container.innerHTML = list.map(m=>`
+    <div class="log-row">
+      <div class="name">${m.person} — ${m.hours}h${m.date?` · ${formatDMY(m.date)}`:''}</div>
+      <div class="status">${m.note||''}</div>
+      <button class="btn sm danger" data-id="${m.id}">Quitar</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('button[data-id]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const all = await loadManualAdjustments();
+      const filtered = all.filter(m=>m.id!==btn.dataset.id);
+      await saveManualAdjustments(filtered);
+      renderPeople();
+    });
+  });
+}
+
+document.getElementById('mAddBtn').addEventListener('click', async ()=>{
+  const person = document.getElementById('mPerson').value.trim();
+  const hours = parseFloat(document.getElementById('mHours').value);
+  const date = document.getElementById('mDate').value || null;
+  const note = document.getElementById('mNote').value.trim();
+  if (!person || !hours || hours<=0){
+    alert('Indica al menos el nombre de la persona y unas horas válidas.');
+    return;
+  }
+  const all = await loadManualAdjustments();
+  all.push({ id: 'm'+Date.now()+Math.random().toString(36).slice(2,6), person, type:'HHEE', hours, date, note, addedAt: new Date().toISOString() });
+  await saveManualAdjustments(all);
+  document.getElementById('mPerson').value='';
+  document.getElementById('mNote').value='';
+  renderPeople();
+});
+
+/* ---------------------------------------------------------
+   SHIFTS TAB — coverage rules + violations
+--------------------------------------------------------- */
+let currentRules = null;
+
+function renderRulesTable(){
+  const tbody = document.getElementById('rulesTableBody');
+  tbody.innerHTML='';
+  for (let dow=0; dow<7; dow++){
+    const tr = document.createElement('tr');
+    const tdDay = document.createElement('td'); tdDay.textContent = DOW_LABEL[dow];
+    tr.appendChild(tdDay);
+    ['manana','tarde','noche'].forEach(shift=>{
+      const td = document.createElement('td');
+      const rule = currentRules.find(r=>r.dow===dow && r.shift===shift);
+      const input = document.createElement('input');
+      input.type='number'; input.min='0';
+      input.value = rule ? rule.min : '';
+      input.addEventListener('change', async ()=>{
+        const val = input.value.trim();
+        currentRules = currentRules.filter(r=>!(r.dow===dow && r.shift===shift));
+        if (val!=='') currentRules.push({dow, shift, min: parseInt(val,10)});
+        await saveRules(currentRules);
+        renderShiftCoverage();
+        renderBolsaRuleAnalysis();
+      });
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+}
+
+document.getElementById('rulesToggle').addEventListener('click', ()=>{
+  const el = document.getElementById('rulesToggle');
+  const body = document.getElementById('rulesBody');
+  el.classList.toggle('closed');
+  body.style.display = el.classList.contains('closed') ? 'none' : 'block';
+});
+
+async function renderShifts(){
+  const allWeeks = await loadAllWeeks();
+  refreshAllAvailability();
+  if (!allWeeks.length) return;
+  if (currentRules===null) currentRules = await loadRules();
+  renderRulesTable();
+
+  const fFrom = document.getElementById('sMonthFrom'), fTo = document.getElementById('sMonthTo');
+  buildMonthFilterOptions(allWeeks, fFrom, fTo, 'built');
+  if (fFrom.dataset.listenerAdded!=='1'){
+    [fFrom,fTo].forEach(el=>el.addEventListener('change', ()=>{ renderShiftCoverage(); renderBolsaRuleAnalysis(); }));
+    fFrom.dataset.listenerAdded='1';
+  }
+  renderShiftCoverage();
+  renderBolsaRuleAnalysis();
+}
+
+const workedCatsForCoverage = ['worked','worked_change','partial','bolsa','extra','holiday'];
+
+async function renderShiftCoverage(){
+  const allWeeks = await loadAllWeeks();
+  if (!allWeeks.length) return;
+  const from = document.getElementById('sMonthFrom').value, to = document.getElementById('sMonthTo').value;
+
+  let cells = [];
+  allWeeks.forEach(w=>w.cells.forEach(c=>{
+    if (!c.date) return;
+    const mk = monthKey(c.date);
+    if (from && mk<from) return;
+    if (to && mk>to) return;
+    c._weekNum = w.weekNum;
+    cells.push(c);
+  }));
+
+  // group by date+shift (exclude 'bolsa' pool-row shift and 'admin')
+  const byDateShift = new Map();
+  cells.forEach(c=>{
+    if (!c.shift || c.shift==='admin' || c.shift==='vacaciones') return;
+    const key = c.date+'|'+c.shift;
+    if (!byDateShift.has(key)) byDateShift.set(key, {list:[], weekNum:c._weekNum});
+    byDateShift.get(key).list.push(c);
+  });
+
+  const rowsOut = [];
+  [...byDateShift.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([key, {list, weekNum}])=>{
+    const [date, shift] = key.split('|');
+    const present = list.filter(c=>workedCatsForCoverage.includes(c.category)).length;
+    const dow = new Date(date+'T12:00:00Z').getUTCDay();
+    const rule = currentRules.find(r=>r.dow===dow && r.shift===shift);
+    const min = rule ? rule.min : null;
+    const violates = min!==null && present<min;
+    rowsOut.push({date, weekNum, dow, shift, present, min, violates});
+  });
+
+  const tbody = document.getElementById('coverageBody');
+  if (!rowsOut.length){
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-dim)">Sin datos en el rango seleccionado</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rowsOut.map(r=>`
+    <tr>
+      <td class="mono">${formatDMY(r.date)}</td>
+      <td>S${r.weekNum ?? '?'}</td>
+      <td>${DOW_LABEL[r.dow]}</td>
+      <td>${SHIFT_LABEL[r.shift]}</td>
+      <td>${r.present}</td>
+      <td>${r.min ?? '—'}</td>
+      <td>${r.min===null ? '<span class="tag">sin regla</span>' : (r.violates ? '<span class="shortfall">⚠ por debajo del mínimo</span>' : '<span class="ok-cov">✓ ok</span>')}</td>
+    </tr>
+  `).join('');
+}
+
+/* ---------------------------------------------------------
+   BOLSA-VS-MINIMUM POLICY CHECK
+   Rule: bolsa/eventual staff should only be called in when the FIXED crew
+   (everyone except bolsa) doesn't reach the agreed minimum on its own.
+--------------------------------------------------------- */
+async function renderBolsaRuleAnalysis(){
+  const allWeeks = await loadAllWeeks();
+  if (!allWeeks.length) return;
+  const from = document.getElementById('sMonthFrom').value, to = document.getElementById('sMonthTo').value;
+
+  let cells = [];
+  allWeeks.forEach(w=>w.cells.forEach(c=>{
+    if (!c.date) return;
+    const mk = monthKey(c.date);
+    if (from && mk<from) return;
+    if (to && mk>to) return;
+    c._weekNum = w.weekNum;
+    cells.push(c);
+  }));
+
+  const byDateShift = new Map();
+  cells.forEach(c=>{
+    if (!c.shift || c.shift==='admin' || c.shift==='vacaciones') return;
+    const key = c.date+'|'+c.shift;
+    if (!byDateShift.has(key)) byDateShift.set(key, {list:[], weekNum:c._weekNum});
+    byDateShift.get(key).list.push(c);
+  });
+
+  const results = [];
+  [...byDateShift.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([key, {list, weekNum}])=>{
+    const [date, shift] = key.split('|');
+    const dow = new Date(date+'T12:00:00Z').getUTCDay();
+    const rule = currentRules.find(r=>r.dow===dow && r.shift===shift);
+    const min = rule ? rule.min : null;
+    if (min===null) return; // no rule for this day/shift, nothing to judge
+
+    const fixedPresent = list.filter(c=>c.category!=='bolsa' && workedCatsForCoverage.includes(c.category)).length;
+    const bolsaPresent = list.filter(c=>c.category==='bolsa').length;
+    const totalPresent = fixedPresent + bolsaPresent;
+
+    let verdict;
+    if (fixedPresent>=min && bolsaPresent===0) verdict = 'ok_no_bolsa';           // fine, no bolsa needed or used
+    else if (fixedPresent>=min && bolsaPresent>0) verdict = 'unnecessary_bolsa';  // bolsa called without needing it
+    else if (fixedPresent<min && bolsaPresent>0 && totalPresent>=min) verdict = 'ok_bolsa_covered'; // correctly resolved
+    else if (fixedPresent<min && bolsaPresent>0 && totalPresent<min) verdict = 'still_short_with_bolsa'; // bolsa came but still short
+    else verdict = 'short_no_bolsa'; // below minimum, no bolsa came at all
+
+    results.push({date, weekNum, dow, shift, fixedPresent, bolsaPresent, min, verdict});
+  });
+
+  const VERDICT_META = {
+    ok_no_bolsa:          {label:'✓ Sin bolsa, no hacía falta', cls:'ok-cov'},
+    unnecessary_bolsa:    {label:'⚠ Bolsa llamada sin necesidad', cls:'shortfall'},
+    ok_bolsa_covered:     {label:'✓ Bolsa cubrió el mínimo', cls:'ok-cov'},
+    still_short_with_bolsa:{label:'⚠ Bajo mínimo incluso con bolsa', cls:'shortfall'},
+    short_no_bolsa:        {label:'⚠ Bajo mínimo y sin bolsa', cls:'shortfall'}
+  };
+
+  const counts = {};
+  results.forEach(r=>{ counts[r.verdict]=(counts[r.verdict]||0)+1; });
+
+  document.getElementById('bolsaRuleKpis').innerHTML = `
+    <div class="kpi green"><div class="val">${counts.ok_no_bolsa||0}</div><div class="lbl">Cumplido sin bolsa</div></div>
+    <div class="kpi green"><div class="val">${counts.ok_bolsa_covered||0}</div><div class="lbl">Bolsa usada correctamente</div></div>
+    <div class="kpi orange"><div class="val">${counts.unnecessary_bolsa||0}</div><div class="lbl">Bolsa llamada sin necesidad</div></div>
+    <div class="kpi red"><div class="val">${counts.short_no_bolsa||0}</div><div class="lbl">Bajo mínimo y sin bolsa</div></div>
+    <div class="kpi red"><div class="val">${counts.still_short_with_bolsa||0}</div><div class="lbl">Bajo mínimo aun con bolsa</div></div>
+  `;
+
+  const tbody = document.getElementById('bolsaRuleBody');
+  const problems = results.filter(r=>r.verdict!=='ok_no_bolsa' && r.verdict!=='ok_bolsa_covered');
+  if (!problems.length){
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--text-dim)">Sin incidencias en el rango seleccionado 🎉</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = problems.map(r=>{
+    const meta = VERDICT_META[r.verdict];
+    return `<tr>
+      <td class="mono">${formatDMY(r.date)}</td>
+      <td>S${r.weekNum ?? '?'}</td>
+      <td>${DOW_LABEL[r.dow]}</td>
+      <td>${SHIFT_LABEL[r.shift]}</td>
+      <td>${r.fixedPresent}</td>
+      <td>${r.bolsaPresent}</td>
+      <td>${r.min}</td>
+      <td><span class="${meta.cls}">${meta.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------------------------------------------------
+   IRREGULARITIES TAB — people missing expected days without justification
+--------------------------------------------------------- */
+async function renderIrregular(){
+  const allWeeks = await loadAllWeeks();
+  refreshAllAvailability();
+  if (!allWeeks.length) return;
+  const fFrom = document.getElementById('iMonthFrom'), fTo = document.getElementById('iMonthTo');
+  buildMonthFilterOptions(allWeeks, fFrom, fTo, 'built');
+  if (fFrom.dataset.listenerAdded!=='1'){
+    [fFrom,fTo].forEach(el=>el.addEventListener('change', renderIrregularBody));
+    document.getElementById('iExpected').addEventListener('input', renderIrregularBody);
+    document.getElementById('iHideBolsa').addEventListener('change', renderIrregularBody);
+    document.getElementById('iAggregateShifts').addEventListener('change', renderIrregularBody);
+    fFrom.dataset.listenerAdded='1';
+  }
+  renderIrregularBody();
+}
+
+async function renderIrregularBody(){
+  currentAliases = await loadAliases();
+  const allWeeks = await loadAllWeeks();
+  if (!allWeeks.length) return;
+  const from = document.getElementById('iMonthFrom').value, to = document.getElementById('iMonthTo').value;
+  const expected = parseInt(document.getElementById('iExpected').value,10) || 5;
+  const hideBolsa = document.getElementById('iHideBolsa').checked;
+  const aggregate = document.getElementById('iAggregateShifts').checked;
+
+  const results = [];
+  allWeeks.forEach(week=>{
+    const weekMonths = week.dates.filter(Boolean).map(monthKey);
+    const inRange = weekMonths.some(mk => (!from || mk>=from) && (!to || mk<=to));
+    if (!inRange) return;
+
+    let weekCells = week.cells;
+    if (hideBolsa) weekCells = weekCells.filter(c=>!c.isPool);
+
+    const byPerson = new Map();
+    weekCells.forEach(c=>{
+      const p = canonicalPersonName(c.person);
+      if (!byPerson.has(p)) byPerson.set(p, []);
+      byPerson.get(p).push(c);
+    });
+
+    byPerson.forEach((cellsForPerson, person)=>{
+      const weekLabel = `S${week.weekNum ?? '?'} ${week.year ?? ''}`;
+      if (aggregate){
+        const dates = new Set(cellsForPerson.map(c=>c.date).filter(Boolean));
+        if (dates.size < expected){
+          results.push({person, weekLabel, present:dates.size, expected, detail: [...dates].sort().map(formatDMY).join(', ') || '—'});
+        }
+      } else {
+        const byShift = new Map();
+        cellsForPerson.forEach(c=>{
+          const key = c.shift || '—';
+          if (!byShift.has(key)) byShift.set(key, new Set());
+          if (c.date) byShift.get(key).add(c.date);
+        });
+        byShift.forEach((dates, shift)=>{
+          if (dates.size < expected){
+            results.push({person, weekLabel, present:dates.size, expected, detail:`Turno ${SHIFT_LABEL[shift]||shift}: ${[...dates].sort().map(formatDMY).join(', ')||'—'}`});
+          }
+        });
+      }
+    });
+  });
+
+  results.sort((a,b)=> a.weekLabel.localeCompare(b.weekLabel) || a.person.localeCompare(b.person));
+  const tbody = document.getElementById('irregularBody');
+  if (!results.length){
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-dim)">Sin irregularidades detectadas en el rango seleccionado 🎉</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = results.map(r=>`
+    <tr>
+      <td>${r.person}</td>
+      <td class="mono">${r.weekLabel}</td>
+      <td class="shortfall">${r.present}</td>
+      <td>${r.expected}</td>
+      <td class="tag">${r.detail}</td>
+    </tr>
+  `).join('');
+}
+
+/* ---------------------------------------------------------
+   INIT
+--------------------------------------------------------- */
+(async function init(){
+  const existing = await loadAllWeeks();
+  existing.forEach(w=>{ reviewCache.set(w.id, w); savedIds.add(w.id); });
+  renderReview();
+  refreshAllAvailability();
+})();
+</script>
+</body>
+</html>
